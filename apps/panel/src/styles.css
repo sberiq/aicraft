@@ -459,6 +459,10 @@ th {
   padding: 0 8px;
 }
 
+.action-form {
+  grid-template-columns: 150px minmax(180px, 1fr) auto;
+}
+
 .control-form td strong,
 .control-form td small {
   display: block;

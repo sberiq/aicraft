@@ -4,6 +4,7 @@ import {
   type ClientProfile,
   type AuthProfile,
   type AgentTask,
+  type ActionRecord,
   type ControlOwner,
   type ConnectorKind,
   type ConnectorRecord,
@@ -40,6 +41,7 @@ export class ControllerState {
   private latestSnapshot: Snapshot | null = null;
   private changeListener: (() => void) | null = null;
   private readonly tasks = new Map<string, AgentTask>();
+  private readonly actions = new Map<string, ActionRecord>();
   private controlOwner: ControlOwner = "NONE";
   private activeClientProfileId: string | null = null;
   private activeServerProfileId: string | null = null;
@@ -437,6 +439,61 @@ export class ControllerState {
       .map((task) => structuredClone(task));
   }
 
+  requestAction(input: {
+    actionType: ActionRecord["actionType"];
+    parameters: { text: string };
+    controlEpoch: number;
+  }): ActionRecord {
+    if (!this.activeConnectorId) {
+      throw new Error("No active client connector");
+    }
+
+    if (this.controlOwner !== "AGENT") {
+      throw new Error("Agent does not own control");
+    }
+
+    if (input.controlEpoch !== this.controlEpoch) {
+      throw new Error("Control epoch mismatch");
+    }
+
+    const action: ActionRecord = {
+      id: randomUUID(),
+      connectorId: this.activeConnectorId,
+      actionType: input.actionType,
+      parameters: structuredClone(input.parameters),
+      status: "PENDING",
+      controlEpoch: input.controlEpoch,
+      requestedAt: new Date().toISOString(),
+      completedAt: null,
+    };
+    this.actions.set(action.id, action);
+    this.notifyChange();
+    return structuredClone(action);
+  }
+
+  completeAction(input: {
+    actionId: string;
+    status: ActionRecord["status"];
+    result?: string | undefined;
+  }): ActionRecord {
+    const action = this.actions.get(input.actionId);
+    if (!action) {
+      throw new Error("Action not found");
+    }
+
+    action.status = input.status;
+    action.result = input.result;
+    action.completedAt = new Date().toISOString();
+    this.notifyChange();
+    return structuredClone(action);
+  }
+
+  listActions(): ActionRecord[] {
+    return [...this.actions.values()]
+      .sort((left, right) => left.requestedAt.localeCompare(right.requestedAt))
+      .map((action) => structuredClone(action));
+  }
+
   setControlOwner(owner: ControlOwner): { owner: ControlOwner; controlEpoch: number } {
     this.controlOwner = owner;
     this.controlEpoch += 1;
@@ -459,6 +516,7 @@ export class ControllerState {
     activeConnectorId: string | null;
     controlOwner: ControlOwner;
     tasks: AgentTask[];
+    actions: ActionRecord[];
     connectors: Array<Omit<ConnectorRecord, "tokenHash">>;
     snapshot: Snapshot | null;
   } {
@@ -470,6 +528,7 @@ export class ControllerState {
       activeConnectorId: this.activeConnectorId,
       controlOwner: this.controlOwner,
       tasks: this.listTasks(),
+      actions: this.listActions(),
       connectors: this.listConnectors(),
       snapshot: this.latestSnapshot ? structuredClone(this.latestSnapshot) : null,
     };
@@ -493,6 +552,7 @@ export class ControllerState {
       controlOwner: this.controlOwner,
       controlEpoch: this.controlEpoch,
       tasks: this.listTasks(),
+      actions: this.listActions(),
     };
   }
 
@@ -546,6 +606,11 @@ export class ControllerState {
     this.tasks.clear();
     for (const task of snapshot.tasks) {
       this.tasks.set(task.id, structuredClone(task));
+    }
+
+    this.actions.clear();
+    for (const action of snapshot.actions) {
+      this.actions.set(action.id, structuredClone(action));
     }
   }
 }

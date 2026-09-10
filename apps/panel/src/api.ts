@@ -93,6 +93,15 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ owner }),
     }),
+  requestAction: (input: {
+    actionType: "send_chat" | "send_command";
+    parameters: { text: string };
+    controlEpoch: number;
+  }) =>
+    request<Status["actions"][number]>("/api/actions", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
   startOnboarding: (displayName: string) =>
     request<Status["onboarding"]>("/api/onboarding/start", {
       method: "POST",

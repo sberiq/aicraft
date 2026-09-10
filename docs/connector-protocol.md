@@ -37,3 +37,30 @@ On disconnect, controller:
 3. clears held input;
 4. records the failure;
 5. follows the configured reconnect policy.
+
+## Actions
+
+The controller can send:
+
+```json
+{
+  "type": "action.request",
+  "actionId": "UUID",
+  "actionType": "send_chat",
+  "parameters": {
+    "text": "Hello"
+  },
+  "controlEpoch": 3
+}
+```
+
+The client replies with:
+
+```json
+{
+  "type": "action.result",
+  "actionId": "UUID",
+  "status": "SUCCEEDED",
+  "result": "Action sent through the Minecraft client"
+}
+```

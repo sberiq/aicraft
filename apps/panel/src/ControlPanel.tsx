@@ -1,10 +1,12 @@
-import { Ban, ListTodo, Play, Save, UserRound } from "lucide-react";
+import { Ban, ListTodo, Play, Save, Send, UserRound } from "lucide-react";
 import { useState } from "react";
-import type { AgentTask, ControlOwner, Status } from "./types";
+import type { ActionRecord, AgentTask, ControlOwner, Status } from "./types";
 
 interface ControlPanelProps {
   controlOwner: ControlOwner;
+  controlEpoch: number;
   tasks: AgentTask[];
+  actions: ActionRecord[];
   onSubmitTask: (input: {
     title: string;
     goal: string;
@@ -13,20 +15,32 @@ interface ControlPanelProps {
   }) => Promise<void>;
   onCancelTask: (id: string) => Promise<void>;
   onSetControlOwner: (owner: ControlOwner) => Promise<void>;
+  onRequestAction: (input: {
+    actionType: "send_chat" | "send_command";
+    parameters: { text: string };
+    controlEpoch: number;
+  }) => Promise<void>;
 }
 
 export function ControlPanel({
   controlOwner,
+  controlEpoch,
   tasks,
+  actions,
   onSubmitTask,
   onCancelTask,
   onSetControlOwner,
+  onRequestAction,
 }: ControlPanelProps) {
   const [form, setForm] = useState({
     title: "",
     goal: "",
     priority: "10",
     author: "owner",
+  });
+  const [actionForm, setActionForm] = useState({
+    actionType: "send_chat" as "send_chat" | "send_command",
+    text: "",
   });
 
   const submit = () => {
@@ -42,6 +56,19 @@ export function ControlPanel({
       author: form.author,
     });
     setForm({ ...form, title: "", goal: "" });
+  };
+
+  const submitAction = () => {
+    if (!actionForm.text) {
+      return;
+    }
+
+    void onRequestAction({
+      actionType: actionForm.actionType,
+      parameters: { text: actionForm.text },
+      controlEpoch,
+    });
+    setActionForm({ ...actionForm, text: "" });
   };
 
   return (
@@ -64,6 +91,71 @@ export function ControlPanel({
             </button>
           </div>
         </div>
+      </section>
+
+      <section className="control-section">
+        <header>
+          <Send size={18} />
+          <h2>Client actions</h2>
+        </header>
+        <div className="control-form action-form">
+          <label>
+            <span>Type</span>
+            <select
+              onChange={(event) =>
+                setActionForm({
+                  ...actionForm,
+                  actionType: event.target.value === "send_command" ? "send_command" : "send_chat",
+                })
+              }
+              value={actionForm.actionType}
+            >
+              <option value="send_chat">send_chat</option>
+              <option value="send_command">send_command</option>
+            </select>
+          </label>
+          <label>
+            <span>Text</span>
+            <input
+              onChange={(event) => setActionForm({ ...actionForm, text: event.target.value })}
+              placeholder="Hello"
+              value={actionForm.text}
+            />
+          </label>
+          <button onClick={submitAction} type="button">
+            <Send size={17} />
+            Send
+          </button>
+        </div>
+
+        {actions.length ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Text</th>
+                <th>Status</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {actions.map((action) => (
+                <tr key={action.id}>
+                  <td>{action.actionType}</td>
+                  <td>{action.parameters.text}</td>
+                  <td>
+                    <span className={`status-pill ${action.status.toLowerCase()}`}>
+                      {action.status}
+                    </span>
+                  </td>
+                  <td>{action.result ?? "waiting"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="muted">No client actions yet.</p>
+        )}
       </section>
 
       <section className="control-section">

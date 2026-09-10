@@ -136,6 +136,12 @@ export function App() {
     });
   };
 
+  const requestAction = async (input: Parameters<typeof api.requestAction>[0]) => {
+    await run("request-action", async () => {
+      await api.requestAction(input);
+    });
+  };
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -400,7 +406,10 @@ export function App() {
 
         {activeTab === "control" ? (
           <ControlPanel
+            actions={status?.actions ?? []}
+            controlEpoch={status?.controlEpoch ?? 0}
             controlOwner={status?.controlOwner ?? "NONE"}
+            onRequestAction={requestAction}
             tasks={status?.tasks ?? []}
             onCancelTask={cancelTask}
             onSetControlOwner={setControlOwner}

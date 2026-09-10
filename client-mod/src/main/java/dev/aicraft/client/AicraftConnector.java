@@ -23,10 +23,16 @@ public final class AicraftConnector {
     private final ScheduledExecutorService scheduler;
     private final AicraftConfig config;
     private final AicraftSnapshotProvider snapshotProvider;
+    private final AicraftActionExecutor actionExecutor;
 
-    public AicraftConnector(AicraftConfig config, AicraftSnapshotProvider snapshotProvider) {
+    public AicraftConnector(
+            AicraftConfig config,
+            AicraftSnapshotProvider snapshotProvider,
+            AicraftActionExecutor actionExecutor
+    ) {
         this.config = config;
         this.snapshotProvider = snapshotProvider;
+        this.actionExecutor = actionExecutor;
         this.scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
             Thread thread = new Thread(runnable, "aicraft-connector");
             thread.setDaemon(true);
@@ -74,7 +80,7 @@ public final class AicraftConnector {
 
                 @Override
                 public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-                    handleText(data.toString());
+                    handleText(webSocket, data.toString());
                     webSocket.request(1);
                     return null;
                 }
@@ -125,7 +131,7 @@ public final class AicraftConnector {
         send(webSocket, GSON.toJson(message));
     }
 
-    private void handleText(String text) {
+    private void handleText(WebSocket webSocket, String text) {
         JsonObject message = GSON.fromJson(text, JsonObject.class);
         String type = message.get("type").getAsString();
 
@@ -135,6 +141,8 @@ public final class AicraftConnector {
             AicraftClientMod.LOGGER.info("aicraft client paired with controller");
         } else if ("auth.accepted".equals(type)) {
             AicraftClientMod.LOGGER.info("aicraft client authenticated");
+        } else if ("action.request".equals(type)) {
+            send(webSocket, GSON.toJson(actionExecutor.execute(message)));
         }
     }
 

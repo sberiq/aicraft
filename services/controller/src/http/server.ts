@@ -12,6 +12,7 @@ import {
   clientProfileSchema,
   createPairingSchema,
   createTaskSchema,
+  requestActionSchema,
   serverProfileSchema,
   setTopologySchema,
   setControlOwnerSchema,
@@ -27,6 +28,7 @@ export interface BuildServerOptions {
 export async function buildServer(options: BuildServerOptions = {}) {
   const state = options.state ?? new ControllerState();
   const version = options.version ?? "0.1.0";
+  const connectorSockets = new Map<string, WebSocket>();
   const app = fastify({
     logger: {
       level: process.env.LOG_LEVEL ?? "info",
@@ -84,6 +86,34 @@ export async function buildServer(options: BuildServerOptions = {}) {
   app.get("/api/tasks", async () => ({
     tasks: state.listTasks(),
   }));
+
+  app.get("/api/actions", async () => ({
+    actions: state.listActions(),
+  }));
+
+  app.post("/api/actions", async (request, reply) => {
+    const input = requestActionSchema.parse(request.body);
+    const action = state.requestAction(input);
+    const socket = connectorSockets.get(action.connectorId);
+
+    if (!socket) {
+      const failed = state.completeAction({
+        actionId: action.id,
+        status: "FAILED",
+        result: "Client connector is not connected",
+      });
+      return reply.status(409).send(failed);
+    }
+
+    socket.send(JSON.stringify({
+      type: "action.request",
+      actionId: action.id,
+      actionType: action.actionType,
+      parameters: action.parameters,
+      controlEpoch: action.controlEpoch,
+    }));
+    return action;
+  });
 
   app.post("/api/tasks", async (request) => {
     const input = createTaskSchema.parse(request.body);
@@ -161,6 +191,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
             protocolVersion: message.protocolVersion,
           });
           connectorId = paired.connector.id;
+          connectorSockets.set(paired.connector.id, socket);
           socket.send(JSON.stringify({
             type: "pair.accepted",
             connectorId: paired.connector.id,
@@ -180,6 +211,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
           return;
         }
         connectorId = connector.id;
+        connectorSockets.set(connector.id, socket);
         socket.send(JSON.stringify({
           type: "auth.accepted",
           connectorId: connector.id,
@@ -199,13 +231,23 @@ export async function buildServer(options: BuildServerOptions = {}) {
         return;
       }
 
-      state.storeSnapshot(message.payload);
-      socket.send(JSON.stringify({ type: "snapshot.ack" }));
+      if (message.type === "action.result") {
+        state.completeAction({
+          actionId: message.actionId,
+          status: message.status,
+          result: message.result,
+        });
+        socket.send(JSON.stringify({ type: "action.result.ack" }));
+      } else {
+        state.storeSnapshot(message.payload);
+        socket.send(JSON.stringify({ type: "snapshot.ack" }));
+      }
     });
 
     socket.on("close", () => {
       if (connectorId) {
         state.markOffline(connectorId);
+        connectorSockets.delete(connectorId);
       }
     });
   });

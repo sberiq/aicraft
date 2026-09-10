@@ -137,4 +137,50 @@ describe("ControllerState", () => {
     expect(after.controlOwner).toBe("HUMAN");
     expect(after.controlEpoch).toBeGreaterThan(before);
   });
+
+  it("creates and completes a client action with the current control epoch", () => {
+    const state = new ControllerState();
+    const grant = state.createPairingGrant("client_mod");
+    const paired = state.pairConnector({
+      pairingCode: grant.code,
+      kind: "client_mod",
+      name: "Action client",
+      protocolVersion: 1,
+    });
+    state.setControlOwner("AGENT");
+    const controlEpoch = state.describe().controlEpoch;
+    const action = state.requestAction({
+      actionType: "send_chat",
+      parameters: { text: "hello" },
+      controlEpoch,
+    });
+    const completed = state.completeAction({
+      actionId: action.id,
+      status: "SUCCEEDED",
+      result: "sent",
+    });
+
+    expect(action.connectorId).toBe(paired.connector.id);
+    expect(action.status).toBe("PENDING");
+    expect(completed.status).toBe("SUCCEEDED");
+    expect(state.listActions()[0]?.id).toBe(action.id);
+  });
+
+  it("rejects an action with a stale control epoch", () => {
+    const state = new ControllerState();
+    const grant = state.createPairingGrant("client_mod");
+    state.pairConnector({
+      pairingCode: grant.code,
+      kind: "client_mod",
+      name: "Action client",
+      protocolVersion: 1,
+    });
+    state.setControlOwner("AGENT");
+
+    expect(() => state.requestAction({
+      actionType: "send_chat",
+      parameters: { text: "hello" },
+      controlEpoch: 1,
+    })).toThrow();
+  });
 });

@@ -60,3 +60,11 @@ export const createTaskSchema = z.object({
 export const setControlOwnerSchema = z.object({
   owner: z.enum(["NONE", "AGENT", "HUMAN"]),
 });
+
+export const requestActionSchema = z.object({
+  actionType: z.enum(["send_chat", "send_command"]),
+  parameters: z.object({
+    text: z.string().min(1).max(256),
+  }),
+  controlEpoch: z.number().int().positive(),
+});

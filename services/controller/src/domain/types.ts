@@ -6,6 +6,8 @@ export type BrainMode = "BUILT_IN" | "EXTERNAL";
 export type AuthMode = "MICROSOFT" | "OFFLINE_SERVER";
 export type ControlOwner = "NONE" | "AGENT" | "HUMAN";
 export type TaskStatus = "QUEUED" | "RUNNING" | "BLOCKED" | "SUCCEEDED" | "FAILED" | "CANCELLED";
+export type ActionType = "send_chat" | "send_command";
+export type ActionStatus = "PENDING" | "SUCCEEDED" | "FAILED" | "UNKNOWN";
 
 export interface OwnerProfile {
   id: string;
@@ -115,5 +117,19 @@ export interface AgentTask {
   author: string;
   createdAt: string;
   updatedAt: string;
+  result?: string | undefined;
+}
+
+export interface ActionRecord {
+  id: string;
+  connectorId: string;
+  actionType: ActionType;
+  parameters: {
+    text: string;
+  };
+  status: ActionStatus;
+  controlEpoch: number;
+  requestedAt: string;
+  completedAt: string | null;
   result?: string | undefined;
 }

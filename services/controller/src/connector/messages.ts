@@ -31,6 +31,12 @@ export const connectorMessageSchema = z.discriminatedUnion("type", [
       capturedAt: z.string().datetime(),
     }),
   }),
+  z.object({
+    type: z.literal("action.result"),
+    actionId: z.string().uuid(),
+    status: z.enum(["SUCCEEDED", "FAILED", "UNKNOWN"]),
+    result: z.string().optional(),
+  }),
 ]);
 
 export type ConnectorMessage = z.infer<typeof connectorMessageSchema>;

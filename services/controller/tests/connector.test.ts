@@ -32,6 +32,34 @@ describe("connector WebSocket", () => {
     expect(accepted.type).toBe("pair.accepted");
     expect(typeof accepted.connectorToken).toBe("string");
 
+    state.setControlOwner("AGENT");
+    const controlEpoch = state.describe().controlEpoch;
+    const actionRequest = waitForMessage(socket, "action.request");
+    const createAction = await app.inject({
+      method: "POST",
+      url: "/api/actions",
+      payload: {
+        actionType: "send_chat",
+        parameters: { text: "hello" },
+        controlEpoch,
+      },
+    });
+    const request = await actionRequest;
+
+    expect(createAction.statusCode).toBe(200);
+    expect(request.actionType).toBe("send_chat");
+
+    const actionResultAck = waitForMessage(socket, "action.result.ack");
+    socket.send(JSON.stringify({
+      type: "action.result",
+      actionId: request.actionId,
+      status: "SUCCEEDED",
+      result: "sent through test connector",
+    }));
+    await actionResultAck;
+
+    expect(state.listActions()[0]?.status).toBe("SUCCEEDED");
+
     await new Promise<void>((resolve, reject) => {
       socket.once("error", reject);
       socket.once("close", () => resolve());
@@ -46,3 +74,24 @@ describe("connector WebSocket", () => {
     await app.close();
   });
 });
+
+function waitForMessage(socket: WebSocket, expectedType: string): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      socket.off("message", handleMessage);
+      reject(new Error(`Timed out waiting for ${expectedType}`));
+    }, 2_000);
+
+    function handleMessage(data: unknown) {
+      const message = JSON.parse(String(data)) as Record<string, unknown>;
+      if (message.type === expectedType) {
+        clearTimeout(timeout);
+        socket.off("message", handleMessage);
+        resolve(message);
+      }
+    }
+
+    socket.on("message", handleMessage);
+    socket.once("error", reject);
+  });
+}

@@ -48,6 +48,10 @@ All HTTP responses use JSON. Runtime errors use:
 - `POST /api/tasks` - create a task.
 - `POST /api/tasks/:id/cancel` - cancel a task.
 - `POST /api/control` - set control owner to `NONE`, `AGENT`, or `HUMAN`.
+- `GET /api/actions` - list client actions.
+- `POST /api/actions` - request a safe client action with the current `controlEpoch`.
+
+The first supported client actions are `send_chat` and `send_command`. They are executed through the real Minecraft client's network handler.
 
 ## Connector WebSocket
 

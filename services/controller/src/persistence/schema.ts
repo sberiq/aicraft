@@ -89,6 +89,21 @@ export const serializedControllerStateSchema = z.object({
       result: z.string().optional(),
     }),
   ),
+  actions: z.array(
+    z.object({
+      id: z.string().uuid(),
+      connectorId: z.string().uuid(),
+      actionType: z.enum(["send_chat", "send_command"]),
+      parameters: z.object({
+        text: z.string(),
+      }),
+      status: z.enum(["PENDING", "SUCCEEDED", "FAILED", "UNKNOWN"]),
+      controlEpoch: z.number().int().positive(),
+      requestedAt: z.string().datetime(),
+      completedAt: z.string().datetime().nullable(),
+      result: z.string().optional(),
+    }),
+  ),
 });
 
 export type SerializedControllerState = z.infer<typeof serializedControllerStateSchema>;

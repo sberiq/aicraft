@@ -4,6 +4,8 @@ export type TopologyMode = "LOCAL" | "REMOTE_CLIENT";
 export type OnboardingStatus = "not_started" | "in_progress" | "completed";
 export type ControlOwner = "NONE" | "AGENT" | "HUMAN";
 export type TaskStatus = "QUEUED" | "RUNNING" | "BLOCKED" | "SUCCEEDED" | "FAILED" | "CANCELLED";
+export type ActionType = "send_chat" | "send_command";
+export type ActionStatus = "PENDING" | "SUCCEEDED" | "FAILED" | "UNKNOWN";
 
 export interface Connector {
   id: string;
@@ -93,12 +95,27 @@ export interface AgentTask {
   result?: string;
 }
 
+export interface ActionRecord {
+  id: string;
+  connectorId: string;
+  actionType: ActionType;
+  parameters: {
+    text: string;
+  };
+  status: ActionStatus;
+  controlEpoch: number;
+  requestedAt: string;
+  completedAt: string | null;
+  result?: string;
+}
+
 export interface Status {
   onboarding: Onboarding;
   settings: Settings;
   profiles: Profiles;
   controlOwner: ControlOwner;
   tasks: AgentTask[];
+  actions: ActionRecord[];
   controlEpoch: number;
   activeConnectorId: string | null;
   connectors: Connector[];

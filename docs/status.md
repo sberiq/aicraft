@@ -20,6 +20,7 @@
   - active profile switching;
   - task queue and cancellation;
   - `AGENT` / `HUMAN` control arbitration;
+  - safe client actions `send_chat` and `send_command` with `controlEpoch` checks;
   - SQLite persistence.
 - Dashboard provides:
   - overview and live status polling;
@@ -27,10 +28,11 @@
   - Connections pairing and connector revocation;
   - Profiles for client, identity, server, and brain;
   - Control screen with manual takeover and task creation.
+  - Client actions screen for chat and server commands.
 
 ## Verification
 
-- Node tests: 39 passed.
+- Node tests: 42 passed.
 - TypeScript typecheck: passed.
 - Controller production build: passed.
 - Panel production build: passed.

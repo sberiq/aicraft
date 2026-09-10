@@ -34,6 +34,26 @@ describe("SQLite state persistence", () => {
       priority: 20,
       author: "owner",
     });
+    const pairingGrant = firstState.createPairingGrant("client_mod");
+    const pairedConnector = firstState.pairConnector({
+      pairingCode: pairingGrant.code,
+      kind: "client_mod",
+      name: "Persistence client",
+      protocolVersion: 1,
+    });
+    firstState.setControlOwner("AGENT");
+    const action = firstState.requestAction({
+      actionType: "send_chat",
+      parameters: { text: "persisted action" },
+      controlEpoch: firstState.describe().controlEpoch,
+    });
+    firstState.completeAction({
+      actionId: action.id,
+      status: "SUCCEEDED",
+      result: "persisted result",
+    });
+    expect(pairedConnector.connector.kind).toBe("client_mod");
+    firstState.setControlOwner("HUMAN");
     firstStore.save(firstState.exportSnapshot());
     firstStore.close();
 
@@ -46,6 +66,8 @@ describe("SQLite state persistence", () => {
     expect(restored.controlOwner).toBe("HUMAN");
     expect(restored.profiles.active.clientProfileId).toBe(clientProfile.id);
     expect(restored.tasks[0]?.id).toBe(task.id);
+    expect(restored.actions[0]?.id).toBe(action.id);
+    expect(restored.actions[0]?.status).toBe("SUCCEEDED");
     secondStore.close();
   });
 });
