@@ -13,7 +13,14 @@ export type ActionType =
   | "set_movement"
   | "set_render_mode"
   | "capture_screenshot"
-  | "server_login";
+  | "server_login"
+  | "look"
+  | "select_hotbar"
+  | "attack"
+  | "use_item"
+  | "open_inventory"
+  | "close_screen"
+  | "drop_item";
 export type ActionStatus = "PENDING" | "SUCCEEDED" | "FAILED" | "UNKNOWN";
 
 export interface OwnerProfile {
@@ -146,6 +153,9 @@ export interface ActionRecord {
       sprint: boolean;
     } | undefined;
     secretId?: string | undefined;
+    yaw?: number | undefined;
+    pitch?: number | undefined;
+    slot?: number | undefined;
   };
   status: ActionStatus;
   controlEpoch: number;

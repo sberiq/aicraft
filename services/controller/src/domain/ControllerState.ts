@@ -552,7 +552,11 @@ export class ControllerState {
             ? { mode: plan.mode }
             : plan.actionType === "set_movement"
               ? { movement: plan.movement }
-              : {},
+              : plan.actionType === "look"
+                ? { yaw: plan.yaw, pitch: plan.pitch }
+                : plan.actionType === "select_hotbar"
+                  ? { slot: plan.slot }
+                  : {},
       controlEpoch: this.controlEpoch,
       taskId: task.id,
     });
@@ -715,6 +719,30 @@ function planBuiltInTask(goal: string):
         sprint: boolean;
       };
     }
+  | {
+      actionType: "look";
+      yaw: number;
+      pitch: number;
+    }
+  | {
+      actionType: "select_hotbar";
+      slot: number;
+    }
+  | {
+      actionType: "attack";
+    }
+  | {
+      actionType: "use_item";
+    }
+  | {
+      actionType: "open_inventory";
+    }
+  | {
+      actionType: "close_screen";
+    }
+  | {
+      actionType: "drop_item";
+    }
   | null {
   const chatMatch = /^send chat:\s*(.+)$/i.exec(goal);
   if (chatMatch?.[1]) {
@@ -736,6 +764,40 @@ function planBuiltInTask(goal: string):
 
   if (/^capture screenshot$/i.test(goal)) {
     return { actionType: "capture_screenshot" };
+  }
+
+  const lookMatch = /^look:\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/i.exec(goal);
+  if (lookMatch?.[1] && lookMatch[2]) {
+    return {
+      actionType: "look",
+      yaw: Number(lookMatch[1]),
+      pitch: Number(lookMatch[2]),
+    };
+  }
+
+  const hotbarMatch = /^select hotbar:\s*([1-9])$/i.exec(goal);
+  if (hotbarMatch?.[1]) {
+    return { actionType: "select_hotbar", slot: Number(hotbarMatch[1]) };
+  }
+
+  if (/^attack$/i.test(goal)) {
+    return { actionType: "attack" };
+  }
+
+  if (/^use item$/i.test(goal)) {
+    return { actionType: "use_item" };
+  }
+
+  if (/^open inventory$/i.test(goal)) {
+    return { actionType: "open_inventory" };
+  }
+
+  if (/^close screen$/i.test(goal)) {
+    return { actionType: "close_screen" };
+  }
+
+  if (/^drop item$/i.test(goal)) {
+    return { actionType: "drop_item" };
   }
 
   const movementMatch = /^set movement:\s*(.*)$/i.exec(goal);

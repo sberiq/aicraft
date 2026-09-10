@@ -13,6 +13,8 @@
   - normal movement through Minecraft key bindings;
   - render modes `ECONOMY`, `OBSERVE`, and `INTERACTIVE`;
   - framebuffer screenshot capture as base64 PNG.
+  - view direction control;
+  - hotbar selection, attack, item use, inventory open/close, and item drop through normal client inputs.
 - Optional Paper server integration plugin builds successfully.
 - Controller service provides:
   - health and status APIs;
@@ -22,7 +24,7 @@
   - client, server, identity, and brain profiles;
   - active profile switching;
   - task queue and cancellation;
-  - deterministic built-in planner for chat, command, movement, render-mode, and screenshot tasks;
+  - deterministic built-in planner for chat, command, movement, render-mode, screenshot, look, hotbar, attack, item use, inventory, and drop tasks;
   - `AGENT` / `HUMAN` control arbitration;
   - safe client actions for chat, commands, movement, render modes, and screenshots with `controlEpoch` checks;
   - SQLite persistence.
@@ -40,7 +42,7 @@
 
 ## Verification
 
-- Node tests: 57 passed.
+- Node tests: 62 passed.
 - TypeScript typecheck: passed.
 - Controller production build: passed.
 - Panel production build: passed.

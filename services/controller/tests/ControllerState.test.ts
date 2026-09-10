@@ -305,4 +305,69 @@ describe("ControllerState", () => {
     );
     expect(state.exportSnapshot().actions[0]?.result).toBe("Screenshot captured");
   });
+
+  it("plans look and hotbar tasks", () => {
+    const state = new ControllerState();
+    const grant = state.createPairingGrant("client_mod");
+    state.pairConnector({
+      pairingCode: grant.code,
+      kind: "client_mod",
+      name: "Basic skill client",
+      protocolVersion: 1,
+    });
+    state.setControlOwner("AGENT");
+    const lookTask = state.submitTask({
+      title: "Look north",
+      goal: "look: -12.5, 7.25",
+      priority: 1,
+      author: "owner",
+    });
+    state.runTask(lookTask.id);
+    const hotbarTask = state.submitTask({
+      title: "Select sword",
+      goal: "select hotbar: 2",
+      priority: 1,
+      author: "owner",
+    });
+    state.runTask(hotbarTask.id);
+
+    const actions = state.listActions();
+    expect(actions[0]?.actionType).toBe("look");
+    expect(actions[0]?.parameters.yaw).toBe(-12.5);
+    expect(actions[0]?.parameters.pitch).toBe(7.25);
+    expect(actions[1]?.actionType).toBe("select_hotbar");
+    expect(actions[1]?.parameters.slot).toBe(2);
+  });
+
+  it("plans simple inventory and interaction tasks", () => {
+    const state = new ControllerState();
+    const grant = state.createPairingGrant("client_mod");
+    state.pairConnector({
+      pairingCode: grant.code,
+      kind: "client_mod",
+      name: "Inventory client",
+      protocolVersion: 1,
+    });
+    state.setControlOwner("AGENT");
+    const goals = [
+      { title: "Open inventory", goal: "open inventory", actionType: "open_inventory" },
+      { title: "Attack", goal: "attack", actionType: "attack" },
+      { title: "Use item", goal: "use item", actionType: "use_item" },
+      { title: "Close screen", goal: "close screen", actionType: "close_screen" },
+      { title: "Drop item", goal: "drop item", actionType: "drop_item" },
+    ];
+
+    for (const goal of goals) {
+      const task = state.submitTask({
+        title: goal.title,
+        goal: goal.goal,
+        priority: 1,
+        author: "owner",
+      });
+      state.runTask(task.id);
+    }
+
+    const actions = state.listActions();
+    expect(actions.map((action) => action.actionType)).toEqual(goals.map((goal) => goal.actionType));
+  });
 });

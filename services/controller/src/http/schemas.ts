@@ -113,6 +113,46 @@ export const requestActionSchema = z.discriminatedUnion("actionType", [
     }),
     controlEpoch: z.number().int().positive(),
   }),
+  z.object({
+    actionType: z.literal("look"),
+    parameters: z.object({
+      yaw: z.number().min(-180).max(180),
+      pitch: z.number().min(-90).max(90),
+    }),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("select_hotbar"),
+    parameters: z.object({
+      slot: z.number().int().min(1).max(9),
+    }),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("attack"),
+    parameters: z.object({}),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("use_item"),
+    parameters: z.object({}),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("open_inventory"),
+    parameters: z.object({}),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("close_screen"),
+    parameters: z.object({}),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("drop_item"),
+    parameters: z.object({}),
+    controlEpoch: z.number().int().positive(),
+  }),
 ]);
 
 export const createSecretSchema = z.object({

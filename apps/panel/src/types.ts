@@ -11,7 +11,15 @@ export type ActionType =
   | "send_command"
   | "set_movement"
   | "set_render_mode"
-  | "capture_screenshot";
+  | "capture_screenshot"
+  | "server_login"
+  | "look"
+  | "select_hotbar"
+  | "attack"
+  | "use_item"
+  | "open_inventory"
+  | "close_screen"
+  | "drop_item";
 export type ActionStatus = "PENDING" | "SUCCEEDED" | "FAILED" | "UNKNOWN";
 
 export interface Connector {
@@ -120,6 +128,10 @@ export interface ActionRecord {
       sneak: boolean;
       sprint: boolean;
     };
+    secretId?: string;
+    yaw?: number;
+    pitch?: number;
+    slot?: number;
   };
   status: ActionStatus;
   controlEpoch: number;

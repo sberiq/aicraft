@@ -4,6 +4,8 @@ import com.google.gson.JsonObject;
 import net.minecraft.client.option.CloudRenderMode;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.GraphicsMode;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -14,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public final class AicraftActionExecutor {
     public JsonObject execute(JsonObject request) {
@@ -36,15 +39,25 @@ public final class AicraftActionExecutor {
             ClientPlayerEntity player = client.player;
             ClientPlayNetworkHandler networkHandler = client.getNetworkHandler();
 
-            if (player == null || networkHandler == null) {
+            if (player == null) {
                 response.addProperty("status", "FAILED");
-                response.addProperty("result", "Player or network handler is unavailable");
+                response.addProperty("result", "Player is unavailable");
                 return response;
             }
 
             if ("send_chat".equals(actionType)) {
+                if (networkHandler == null) {
+                    response.addProperty("status", "FAILED");
+                    response.addProperty("result", "Network handler is unavailable");
+                    return response;
+                }
                 networkHandler.sendChatMessage(parameters.get("text").getAsString());
             } else if ("send_command".equals(actionType)) {
+                if (networkHandler == null) {
+                    response.addProperty("status", "FAILED");
+                    response.addProperty("result", "Network handler is unavailable");
+                    return response;
+                }
                 String text = parameters.get("text").getAsString();
                 networkHandler.sendChatCommand(text.startsWith("/") ? text.substring(1) : text);
             } else if ("set_movement".equals(actionType)) {
@@ -67,6 +80,27 @@ public final class AicraftActionExecutor {
                 image.close();
                 Files.deleteIfExists(temporaryFile);
                 response.addProperty("screenshotBase64", Base64.getEncoder().encodeToString(pngBytes));
+            } else if ("look".equals(actionType)) {
+                player.setYaw(parameters.get("yaw").getAsFloat());
+                player.setPitch(parameters.get("pitch").getAsFloat());
+            } else if ("select_hotbar".equals(actionType)) {
+                int slot = parameters.get("slot").getAsInt() - 1;
+                if (slot < 0 || slot >= client.options.hotbarKeys.length) {
+                    response.addProperty("status", "FAILED");
+                    response.addProperty("result", "Hotbar slot is out of range");
+                    return response;
+                }
+                tapKey(client.options.hotbarKeys[slot]);
+            } else if ("attack".equals(actionType)) {
+                tapKey(client.options.attackKey);
+            } else if ("use_item".equals(actionType)) {
+                tapKey(client.options.useKey);
+            } else if ("open_inventory".equals(actionType)) {
+                client.setScreen(new InventoryScreen(player));
+            } else if ("close_screen".equals(actionType)) {
+                client.setScreen(null);
+            } else if ("drop_item".equals(actionType)) {
+                tapKey(client.options.dropKey);
             } else {
                 response.addProperty("status", "FAILED");
                 response.addProperty("result", "Unsupported action type");
@@ -75,7 +109,7 @@ public final class AicraftActionExecutor {
 
             if (!response.has("screenshotBase64")) {
                 response.addProperty("status", "SUCCEEDED");
-                response.addProperty("result", "Action sent through the Minecraft client");
+                response.addProperty("result", describeActionResult(actionType));
             } else {
                 response.addProperty("status", "SUCCEEDED");
                 response.addProperty("result", "Screenshot captured from Minecraft framebuffer");
@@ -87,6 +121,28 @@ public final class AicraftActionExecutor {
         }
 
         return response;
+    }
+
+    private void tapKey(KeyBinding keyBinding) {
+        keyBinding.onKeyPressed(keyBinding.getDefaultKey());
+        keyBinding.setPressed(true);
+        CompletableFuture
+                .delayedExecutor(50, TimeUnit.MILLISECONDS)
+                .execute(() -> MinecraftClient.getInstance().execute(() -> keyBinding.setPressed(false)));
+    }
+
+    private String describeActionResult(String actionType) {
+        return switch (actionType) {
+            case "capture_screenshot" -> "Screenshot captured from Minecraft framebuffer";
+            case "look" -> "Client view direction updated";
+            case "select_hotbar" -> "Hotbar slot selected through normal key binding";
+            case "attack" -> "Attack action sent through Minecraft client";
+            case "use_item" -> "Item use action sent through Minecraft client";
+            case "open_inventory" -> "Inventory screen opened";
+            case "close_screen" -> "Client screen closed";
+            case "drop_item" -> "Drop item key sent through normal key binding";
+            default -> "Action sent through the Minecraft client";
+        };
     }
 
     private void setRenderMode(MinecraftClient client, String mode) {

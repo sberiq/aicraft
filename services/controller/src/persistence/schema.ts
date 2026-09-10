@@ -102,6 +102,13 @@ export const serializedControllerStateSchema = z.object({
         "set_render_mode",
         "capture_screenshot",
         "server_login",
+        "look",
+        "select_hotbar",
+        "attack",
+        "use_item",
+        "open_inventory",
+        "close_screen",
+        "drop_item",
       ]),
       parameters: z.object({
         text: z.string().optional(),
@@ -118,6 +125,9 @@ export const serializedControllerStateSchema = z.object({
           })
           .optional(),
         secretId: z.string().uuid().optional(),
+        yaw: z.number().min(-180).max(180).optional(),
+        pitch: z.number().min(-90).max(90).optional(),
+        slot: z.number().int().min(1).max(9).optional(),
       }),
       status: z.enum(["PENDING", "SUCCEEDED", "FAILED", "UNKNOWN"]),
       controlEpoch: z.number().int().positive(),

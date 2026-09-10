@@ -63,6 +63,9 @@ export function ControlPanel({
   });
   const [actionKind, setActionKind] = useState<ActionKind>("send_chat");
   const [text, setText] = useState("");
+  const [lookYaw, setLookYaw] = useState("0");
+  const [lookPitch, setLookPitch] = useState("0");
+  const [hotbarSlot, setHotbarSlot] = useState("1");
   const [renderMode, setRenderMode] = useState<RenderMode>("ECONOMY");
   const [movement, setMovement] = useState({
     forward: false,
@@ -105,6 +108,44 @@ export function ControlPanel({
       void onRequestAction({
         actionType: actionKind,
         parameters: { mode: renderMode },
+        controlEpoch,
+      });
+      return;
+    }
+
+    if (actionKind === "look") {
+      const yaw = Number(lookYaw);
+      const pitch = Number(lookPitch);
+      if (!Number.isFinite(yaw) || !Number.isFinite(pitch)) return;
+      void onRequestAction({
+        actionType: "look",
+        parameters: { yaw, pitch },
+        controlEpoch,
+      });
+      return;
+    }
+
+    if (actionKind === "select_hotbar") {
+      const slot = Number(hotbarSlot);
+      if (!Number.isInteger(slot) || slot < 1 || slot > 9) return;
+      void onRequestAction({
+        actionType: "select_hotbar",
+        parameters: { slot },
+        controlEpoch,
+      });
+      return;
+    }
+
+    if (
+      actionKind === "attack" ||
+      actionKind === "use_item" ||
+      actionKind === "open_inventory" ||
+      actionKind === "close_screen" ||
+      actionKind === "drop_item"
+    ) {
+      void onRequestAction({
+        actionType: actionKind,
+        parameters: {},
         controlEpoch,
       });
       return;
@@ -242,6 +283,13 @@ export function ControlPanel({
               <option value="set_movement">set_movement</option>
               <option value="set_render_mode">set_render_mode</option>
               <option value="capture_screenshot">capture_screenshot</option>
+              <option value="look">look</option>
+              <option value="select_hotbar">select_hotbar</option>
+              <option value="attack">attack</option>
+              <option value="use_item">use_item</option>
+              <option value="open_inventory">open_inventory</option>
+              <option value="close_screen">close_screen</option>
+              <option value="drop_item">drop_item</option>
             </select>
           </label>
           {actionKind === "send_chat" || actionKind === "send_command" ? (
@@ -265,6 +313,38 @@ export function ControlPanel({
                 <option value="OBSERVE">OBSERVE</option>
                 <option value="INTERACTIVE">INTERACTIVE</option>
               </select>
+            </label>
+          ) : null}
+          {actionKind === "look" ? (
+            <>
+              <label>
+                <span>Yaw</span>
+                <input
+                  onChange={(event) => setLookYaw(event.target.value)}
+                  type="number"
+                  value={lookYaw}
+                />
+              </label>
+              <label>
+                <span>Pitch</span>
+                <input
+                  onChange={(event) => setLookPitch(event.target.value)}
+                  type="number"
+                  value={lookPitch}
+                />
+              </label>
+            </>
+          ) : null}
+          {actionKind === "select_hotbar" ? (
+            <label>
+              <span>Slot</span>
+              <input
+                max={9}
+                min={1}
+                onChange={(event) => setHotbarSlot(event.target.value)}
+                type="number"
+                value={hotbarSlot}
+              />
             </label>
           ) : null}
           <button onClick={submitAction} type="button">
@@ -409,6 +489,14 @@ function describeAction(action: ActionRecord): string {
 
   if (action.parameters.mode) {
     return action.parameters.mode;
+  }
+
+  if (action.parameters.yaw !== undefined || action.parameters.pitch !== undefined) {
+    return `yaw ${action.parameters.yaw ?? 0}, pitch ${action.parameters.pitch ?? 0}`;
+  }
+
+  if (action.parameters.slot !== undefined) {
+    return `slot ${action.parameters.slot}`;
   }
 
   if (action.parameters.movement) {
