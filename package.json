@@ -1,0 +1,20 @@
+{
+  "name": "aicraft",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "services/controller",
+    "apps/panel"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:controller": "npm run dev --workspace services/controller",
+    "dev:panel": "npm run dev --workspace apps/panel"
+  }
+}

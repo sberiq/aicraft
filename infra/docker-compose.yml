@@ -1,0 +1,27 @@
+services:
+  controller:
+    build:
+      context: ..
+      dockerfile: infra/service.Dockerfile
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      LOG_LEVEL: info
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  panel:
+    build:
+      context: ..
+      dockerfile: infra/panel.Dockerfile
+    depends_on:
+      controller:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

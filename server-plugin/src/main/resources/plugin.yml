@@ -1,0 +1,7 @@
+name: AicraftIntegration
+version: 0.1.0
+main: dev.aicraft.server.AicraftPlugin
+api-version: "1.20"
+author: aicraft
+description: Optional server integration for the aicraft Minecraft agent.
+website: https://github.com/sberiq/aicraft

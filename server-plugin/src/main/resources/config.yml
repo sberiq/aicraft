@@ -1,0 +1,6 @@
+enabled: false
+connector-endpoint: "wss://controller.example.com/connector"
+connector-name: "minecraft-server"
+connector-token: ""
+heartbeat-interval-ms: 5000
+auto-reconnect: true
