@@ -27,6 +27,7 @@ export const serverProfileSchema = z.object({
   minecraftVersion: z.string().min(1).max(30),
   authMode: z.enum(["MICROSOFT", "OFFLINE_SERVER"]),
   offlineNickname: z.string().min(1).max(32).optional(),
+  loginCommandTemplate: z.string().min(1).max(120).optional(),
   clientProfileId: z.string().uuid(),
 });
 
@@ -61,10 +62,65 @@ export const setControlOwnerSchema = z.object({
   owner: z.enum(["NONE", "AGENT", "HUMAN"]),
 });
 
-export const requestActionSchema = z.object({
-  actionType: z.enum(["send_chat", "send_command"]),
-  parameters: z.object({
-    text: z.string().min(1).max(256),
+const movementSchema = z.object({
+  forward: z.boolean(),
+  back: z.boolean(),
+  left: z.boolean(),
+  right: z.boolean(),
+  jump: z.boolean(),
+  sneak: z.boolean(),
+  sprint: z.boolean(),
+});
+
+export const requestActionSchema = z.discriminatedUnion("actionType", [
+  z.object({
+    actionType: z.literal("send_chat"),
+    parameters: z.object({
+      text: z.string().min(1).max(256),
+    }),
+    controlEpoch: z.number().int().positive(),
   }),
-  controlEpoch: z.number().int().positive(),
+  z.object({
+    actionType: z.literal("send_command"),
+    parameters: z.object({
+      text: z.string().min(1).max(256),
+    }),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("set_movement"),
+    parameters: z.object({
+      movement: movementSchema,
+    }),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("set_render_mode"),
+    parameters: z.object({
+      mode: z.enum(["ECONOMY", "OBSERVE", "INTERACTIVE"]),
+    }),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("capture_screenshot"),
+    parameters: z.object({}),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("server_login"),
+    parameters: z.object({
+      secretId: z.string().uuid(),
+    }),
+    controlEpoch: z.number().int().positive(),
+  }),
+]);
+
+export const createSecretSchema = z.object({
+  name: z.string().min(1).max(100),
+  kind: z.enum(["auth_password", "api_key"]),
+  value: z.string().min(1).max(4096),
+});
+
+export const serverLoginSchema = z.object({
+  secretId: z.string().uuid(),
 });

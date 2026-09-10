@@ -16,6 +16,8 @@ logs/
 *.sqlite
 *.sqlite3
 *.db
+*.key
+data/
 
 .idea/
 .vscode/

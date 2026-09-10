@@ -9,6 +9,8 @@ services:
       PORT: 3000
       LOG_LEVEL: info
       AICRAFT_DB_PATH: /data/aicraft.sqlite
+      AICRAFT_SECRET_DB_PATH: /data/aicraft-secrets.sqlite
+      AICRAFT_SECRET_KEY_PATH: /data/aicraft-secret.key
     volumes:
       - controller-state:/data
     healthcheck:

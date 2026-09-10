@@ -5,6 +5,7 @@ import {
   type AuthProfile,
   type AgentTask,
   type ActionRecord,
+  type CapturedScreenshot,
   type ControlOwner,
   type ConnectorKind,
   type ConnectorRecord,
@@ -39,6 +40,7 @@ export class ControllerState {
   private activeConnectorId: string | null = null;
   private controlEpoch = 1;
   private latestSnapshot: Snapshot | null = null;
+  private latestScreenshot: CapturedScreenshot | null = null;
   private changeListener: (() => void) | null = null;
   private readonly tasks = new Map<string, AgentTask>();
   private readonly actions = new Map<string, ActionRecord>();
@@ -441,7 +443,7 @@ export class ControllerState {
 
   requestAction(input: {
     actionType: ActionRecord["actionType"];
-    parameters: { text: string };
+    parameters: ActionRecord["parameters"];
     controlEpoch: number;
     taskId?: string | undefined;
   }): ActionRecord {
@@ -477,6 +479,7 @@ export class ControllerState {
     actionId: string;
     status: ActionRecord["status"];
     result?: string | undefined;
+    screenshotBase64?: string | undefined;
   }): ActionRecord {
     const action = this.actions.get(input.actionId);
     if (!action) {
@@ -486,6 +489,14 @@ export class ControllerState {
     action.status = input.status;
     action.result = input.result;
     action.completedAt = new Date().toISOString();
+
+    if (input.screenshotBase64) {
+      this.latestScreenshot = {
+        actionId: action.id,
+        dataUrl: `data:image/png;base64,${input.screenshotBase64}`,
+        capturedAt: action.completedAt,
+      };
+    }
 
     if (action.taskId) {
       const task = this.tasks.get(action.taskId);
@@ -534,7 +545,14 @@ export class ControllerState {
 
     const action = this.requestAction({
       actionType: plan.actionType,
-      parameters: { text: plan.text },
+      parameters:
+        plan.actionType === "send_chat" || plan.actionType === "send_command"
+          ? { text: plan.text }
+          : plan.actionType === "set_render_mode"
+            ? { mode: plan.mode }
+            : plan.actionType === "set_movement"
+              ? { movement: plan.movement }
+              : {},
       controlEpoch: this.controlEpoch,
       taskId: task.id,
     });
@@ -569,6 +587,7 @@ export class ControllerState {
     controlOwner: ControlOwner;
     tasks: AgentTask[];
     actions: ActionRecord[];
+    screenshot: CapturedScreenshot | null;
     connectors: Array<Omit<ConnectorRecord, "tokenHash">>;
     snapshot: Snapshot | null;
   } {
@@ -581,6 +600,7 @@ export class ControllerState {
       controlOwner: this.controlOwner,
       tasks: this.listTasks(),
       actions: this.listActions(),
+      screenshot: this.latestScreenshot ? structuredClone(this.latestScreenshot) : null,
       connectors: this.listConnectors(),
       snapshot: this.latestSnapshot ? structuredClone(this.latestSnapshot) : null,
     };
@@ -676,6 +696,25 @@ function planBuiltInTask(goal: string):
       actionType: "send_chat" | "send_command";
       text: string;
     }
+  | {
+      actionType: "set_render_mode";
+      mode: "ECONOMY" | "OBSERVE" | "INTERACTIVE";
+    }
+  | {
+      actionType: "capture_screenshot";
+    }
+  | {
+      actionType: "set_movement";
+      movement: {
+        forward: boolean;
+        back: boolean;
+        left: boolean;
+        right: boolean;
+        jump: boolean;
+        sneak: boolean;
+        sprint: boolean;
+      };
+    }
   | null {
   const chatMatch = /^send chat:\s*(.+)$/i.exec(goal);
   if (chatMatch?.[1]) {
@@ -685,6 +724,41 @@ function planBuiltInTask(goal: string):
   const commandMatch = /^send command:\s*(.+)$/i.exec(goal);
   if (commandMatch?.[1]) {
     return { actionType: "send_command", text: commandMatch[1] };
+  }
+
+  const renderModeMatch = /^set render mode:\s*(ECONOMY|OBSERVE|INTERACTIVE)$/i.exec(goal);
+  if (renderModeMatch?.[1]) {
+    return {
+      actionType: "set_render_mode",
+      mode: renderModeMatch[1].toUpperCase() as "ECONOMY" | "OBSERVE" | "INTERACTIVE",
+    };
+  }
+
+  if (/^capture screenshot$/i.test(goal)) {
+    return { actionType: "capture_screenshot" };
+  }
+
+  const movementMatch = /^set movement:\s*(.*)$/i.exec(goal);
+  if (movementMatch?.[1] !== undefined) {
+    const enabled = new Set(
+      movementMatch[1]
+        .split(",")
+        .map((part) => part.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    const stop = enabled.has("stop");
+    return {
+      actionType: "set_movement",
+      movement: {
+        forward: !stop && enabled.has("forward"),
+        back: !stop && enabled.has("back"),
+        left: !stop && enabled.has("left"),
+        right: !stop && enabled.has("right"),
+        jump: !stop && enabled.has("jump"),
+        sneak: !stop && enabled.has("sneak"),
+        sprint: !stop && enabled.has("sprint"),
+      },
+    };
   }
 
   return null;

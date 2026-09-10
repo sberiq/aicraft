@@ -25,3 +25,4 @@ Boundaries:
 ## Server Login Plugins
 
 Known login plugins such as AuthMe use controlled chat procedures. Their secrets stay in secret storage and are never sent to the LLM.
+Secret values are encrypted with AES-256-GCM. The controller stores only a `server_login` action with the secret ID; the plaintext is decrypted only when constructing the wire command for the already paired client.

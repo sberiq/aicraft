@@ -36,6 +36,7 @@ export const connectorMessageSchema = z.discriminatedUnion("type", [
     actionId: z.string().uuid(),
     status: z.enum(["SUCCEEDED", "FAILED", "UNKNOWN"]),
     result: z.string().optional(),
+    screenshotBase64: z.string().min(32).optional(),
   }),
 ]);
 

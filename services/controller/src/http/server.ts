@@ -4,6 +4,7 @@ import type { WebSocket } from "ws";
 import { z } from "zod";
 import { ControllerState } from "../domain/ControllerState.js";
 import type { ControllerStateStore } from "../persistence/sqlite.js";
+import { SecretStore } from "../security/SecretStore.js";
 import { connectorMessageSchema } from "../connector/messages.js";
 import {
   activeProfilesSchema,
@@ -11,9 +12,11 @@ import {
   brainProfileSchema,
   clientProfileSchema,
   createPairingSchema,
+  createSecretSchema,
   createTaskSchema,
   requestActionSchema,
   serverProfileSchema,
+  serverLoginSchema,
   setTopologySchema,
   setControlOwnerSchema,
   startOnboardingSchema,
@@ -22,6 +25,7 @@ import {
 export interface BuildServerOptions {
   state?: ControllerState;
   store?: ControllerStateStore;
+  secretStore?: SecretStore;
   version?: string;
 }
 
@@ -29,6 +33,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
   const state = options.state ?? new ControllerState();
   const version = options.version ?? "0.1.0";
   const connectorSockets = new Map<string, WebSocket>();
+  const secretStore = options.secretStore;
   const app = fastify({
     logger: {
       level: process.env.LOG_LEVEL ?? "info",
@@ -50,12 +55,21 @@ export async function buildServer(options: BuildServerOptions = {}) {
     });
   }
 
+  if (secretStore) {
+    app.addHook("onClose", async () => {
+      secretStore.close();
+    });
+  }
+
   app.get("/api/health", async () => ({
     status: "ok",
     version,
   }));
 
-  app.get("/api/status", async () => state.describe());
+  app.get("/api/status", async () => ({
+    ...state.describe(),
+    secrets: secretStore?.list() ?? [],
+  }));
   app.get("/api/profiles", async () => state.listProfiles());
 
   app.post("/api/profiles/client", async (request) => {
@@ -91,6 +105,47 @@ export async function buildServer(options: BuildServerOptions = {}) {
     actions: state.listActions(),
   }));
 
+  app.get("/api/secrets", async () => ({
+    secrets: secretStore?.list() ?? [],
+  }));
+
+  app.post("/api/secrets", async (request, reply) => {
+    if (!secretStore) {
+      return reply.status(503).send({
+        error: {
+          code: "SECRET_STORE_UNAVAILABLE",
+          message: "Secret store is not configured",
+        },
+      });
+    }
+
+    const input = createSecretSchema.parse(request.body);
+    const metadata = secretStore.put(input);
+    return reply.status(201).send(metadata);
+  });
+
+  app.delete("/api/secrets/:id", async (request, reply) => {
+    if (!secretStore) {
+      return reply.status(503).send({
+        error: {
+          code: "SECRET_STORE_UNAVAILABLE",
+          message: "Secret store is not configured",
+        },
+      });
+    }
+
+    const params = z.object({ id: z.string().uuid() }).parse(request.params);
+    if (!secretStore.delete(params.id)) {
+      return reply.status(404).send({
+        error: {
+          code: "SECRET_NOT_FOUND",
+          message: "Secret not found",
+        },
+      });
+    }
+    return { status: "deleted", secretId: params.id };
+  });
+
   app.post("/api/actions", async (request, reply) => {
     const input = requestActionSchema.parse(request.body);
     const action = state.requestAction(input);
@@ -105,15 +160,85 @@ export async function buildServer(options: BuildServerOptions = {}) {
       return reply.status(409).send(failed);
     }
 
-    socket.send(JSON.stringify({
-      type: "action.request",
-      actionId: action.id,
-      actionType: action.actionType,
-      parameters: action.parameters,
-      controlEpoch: action.controlEpoch,
-    }));
+    const wireAction =
+      action.actionType === "server_login" && secretStore
+        ? buildServerLoginAction(state, secretStore, action)
+        : {
+            type: "action.request",
+            actionId: action.id,
+            actionType: action.actionType,
+            parameters: action.parameters,
+            controlEpoch: action.controlEpoch,
+          };
+
+    socket.send(JSON.stringify(wireAction));
     return action;
   });
+
+  app.post("/api/auth/login", async (request, reply) => {
+    if (!secretStore) {
+      return reply.status(503).send({
+        error: {
+          code: "SECRET_STORE_UNAVAILABLE",
+          message: "Secret store is not configured",
+        },
+      });
+    }
+
+    const input = serverLoginSchema.parse(request.body);
+    const action = state.requestAction({
+      actionType: "server_login",
+      parameters: { secretId: input.secretId },
+      controlEpoch: state.describe().controlEpoch,
+    });
+    const socket = connectorSockets.get(action.connectorId);
+
+    if (!socket) {
+      const failed = state.completeAction({
+        actionId: action.id,
+        status: "FAILED",
+        result: "Client connector is not connected",
+      });
+      return reply.status(409).send(failed);
+    }
+
+    socket.send(JSON.stringify(buildServerLoginAction(state, secretStore, action)));
+    return {
+      actionId: action.id,
+      status: "PENDING",
+    };
+  });
+
+  function buildServerLoginAction(
+    state: ControllerState,
+    secretStore: SecretStore,
+    action: ReturnType<ControllerState["requestAction"]>,
+  ): Record<string, unknown> {
+    const secretId = action.parameters.secretId;
+    const secret = secretId ? secretStore.get(secretId) : null;
+    if (!secretId || !secret) {
+      throw new Error("Login secret not found");
+    }
+
+    const status = state.describe();
+    const serverProfile = status.profiles.serverProfiles.find(
+      (profile) => profile.id === status.profiles.active.serverProfileId,
+    );
+    if (!serverProfile) {
+      throw new Error("Active server profile not found");
+    }
+
+    const template = serverProfile.loginCommandTemplate ?? "/login {secret}";
+    const command = template.replaceAll("{secret}", secret);
+
+    return {
+      type: "action.request",
+      actionId: action.id,
+      actionType: "send_command",
+      parameters: { text: command },
+      controlEpoch: action.controlEpoch,
+    };
+  }
 
   app.post("/api/tasks", async (request) => {
     const input = createTaskSchema.parse(request.body);
@@ -241,6 +366,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
           actionId: message.actionId,
           status: message.status,
           result: message.result,
+          screenshotBase64: message.screenshotBase64,
         });
         socket.send(JSON.stringify({ type: "action.result.ack" }));
       } else {

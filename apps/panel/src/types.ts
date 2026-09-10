@@ -4,7 +4,14 @@ export type TopologyMode = "LOCAL" | "REMOTE_CLIENT";
 export type OnboardingStatus = "not_started" | "in_progress" | "completed";
 export type ControlOwner = "NONE" | "AGENT" | "HUMAN";
 export type TaskStatus = "QUEUED" | "RUNNING" | "BLOCKED" | "SUCCEEDED" | "FAILED" | "CANCELLED";
-export type ActionType = "send_chat" | "send_command";
+export type SecretKind = "auth_password" | "api_key";
+export type RenderMode = "ECONOMY" | "OBSERVE" | "INTERACTIVE";
+export type ActionType =
+  | "send_chat"
+  | "send_command"
+  | "set_movement"
+  | "set_render_mode"
+  | "capture_screenshot";
 export type ActionStatus = "PENDING" | "SUCCEEDED" | "FAILED" | "UNKNOWN";
 
 export interface Connector {
@@ -57,6 +64,7 @@ export interface ServerProfile {
   minecraftVersion: string;
   authMode: "MICROSOFT" | "OFFLINE_SERVER";
   offlineNickname?: string;
+  loginCommandTemplate?: string;
   clientProfileId: string;
 }
 
@@ -101,13 +109,37 @@ export interface ActionRecord {
   connectorId: string;
   actionType: ActionType;
   parameters: {
-    text: string;
+    text?: string;
+    mode?: RenderMode;
+    movement?: {
+      forward: boolean;
+      back: boolean;
+      left: boolean;
+      right: boolean;
+      jump: boolean;
+      sneak: boolean;
+      sprint: boolean;
+    };
   };
   status: ActionStatus;
   controlEpoch: number;
   requestedAt: string;
   completedAt: string | null;
   result?: string;
+}
+
+export interface CapturedScreenshot {
+  actionId: string;
+  dataUrl: string;
+  capturedAt: string;
+}
+
+export interface SecretMetadata {
+  id: string;
+  name: string;
+  kind: SecretKind;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Status {
@@ -117,6 +149,8 @@ export interface Status {
   controlOwner: ControlOwner;
   tasks: AgentTask[];
   actions: ActionRecord[];
+  secrets: SecretMetadata[];
+  screenshot: CapturedScreenshot | null;
   controlEpoch: number;
   activeConnectorId: string | null;
   connectors: Connector[];

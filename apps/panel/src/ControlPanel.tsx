@@ -1,12 +1,32 @@
-import { Ban, ListTodo, Play, Save, Send, UserRound } from "lucide-react";
+import {
+  Ban,
+  Camera,
+  Gamepad2,
+  ListTodo,
+  Monitor,
+  Play,
+  Save,
+  Send,
+  UserRound,
+} from "lucide-react";
 import { useState } from "react";
-import type { ActionRecord, AgentTask, ControlOwner, Status } from "./types";
+import type {
+  ActionRecord,
+  AgentTask,
+  CapturedScreenshot,
+  ControlOwner,
+  RenderMode,
+  Status,
+} from "./types";
+
+type ActionKind = Status["actions"][number]["actionType"];
 
 interface ControlPanelProps {
   controlOwner: ControlOwner;
   controlEpoch: number;
   tasks: AgentTask[];
   actions: ActionRecord[];
+  screenshot: CapturedScreenshot | null;
   onSubmitTask: (input: {
     title: string;
     goal: string;
@@ -17,8 +37,8 @@ interface ControlPanelProps {
   onRunTask: (id: string) => Promise<void>;
   onSetControlOwner: (owner: ControlOwner) => Promise<void>;
   onRequestAction: (input: {
-    actionType: "send_chat" | "send_command";
-    parameters: { text: string };
+    actionType: ActionKind;
+    parameters: ActionRecord["parameters"];
     controlEpoch: number;
   }) => Promise<void>;
 }
@@ -28,6 +48,7 @@ export function ControlPanel({
   controlEpoch,
   tasks,
   actions,
+  screenshot,
   onSubmitTask,
   onCancelTask,
   onRunTask,
@@ -40,9 +61,17 @@ export function ControlPanel({
     priority: "10",
     author: "owner",
   });
-  const [actionForm, setActionForm] = useState({
-    actionType: "send_chat" as "send_chat" | "send_command",
-    text: "",
+  const [actionKind, setActionKind] = useState<ActionKind>("send_chat");
+  const [text, setText] = useState("");
+  const [renderMode, setRenderMode] = useState<RenderMode>("ECONOMY");
+  const [movement, setMovement] = useState({
+    forward: false,
+    back: false,
+    left: false,
+    right: false,
+    jump: false,
+    sneak: false,
+    sprint: false,
   });
 
   const submit = () => {
@@ -61,16 +90,40 @@ export function ControlPanel({
   };
 
   const submitAction = () => {
-    if (!actionForm.text) {
+    if (actionKind === "send_chat" || actionKind === "send_command") {
+      if (!text) return;
+      void onRequestAction({
+        actionType: actionKind,
+        parameters: { text },
+        controlEpoch,
+      });
+      setText("");
+      return;
+    }
+
+    if (actionKind === "set_render_mode") {
+      void onRequestAction({
+        actionType: actionKind,
+        parameters: { mode: renderMode },
+        controlEpoch,
+      });
+      return;
+    }
+
+    if (actionKind === "set_movement") {
+      void onRequestAction({
+        actionType: actionKind,
+        parameters: { movement },
+        controlEpoch,
+      });
       return;
     }
 
     void onRequestAction({
-      actionType: actionForm.actionType,
-      parameters: { text: actionForm.text },
+      actionType: "capture_screenshot",
+      parameters: {},
       controlEpoch,
     });
-    setActionForm({ ...actionForm, text: "" });
   };
 
   return (
@@ -97,6 +150,83 @@ export function ControlPanel({
 
       <section className="control-section">
         <header>
+          <Monitor size={18} />
+          <h2>Render</h2>
+        </header>
+        <div className="segmented">
+          {(["ECONOMY", "OBSERVE", "INTERACTIVE"] as RenderMode[]).map((mode) => (
+            <button
+              className={renderMode === mode ? "selected" : ""}
+              key={mode}
+              onClick={() => {
+                setRenderMode(mode);
+                setActionKind("set_render_mode");
+                onRequestAction({
+                  actionType: "set_render_mode",
+                  parameters: { mode },
+                  controlEpoch,
+                }).catch(() => undefined);
+              }}
+              type="button"
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => {
+            setActionKind("capture_screenshot");
+            onRequestAction({
+              actionType: "capture_screenshot",
+              parameters: {},
+              controlEpoch,
+            }).catch(() => undefined);
+          }}
+          type="button"
+        >
+          <Camera size={17} />
+          Capture screenshot
+        </button>
+        {screenshot ? (
+          <figure className="screenshot-frame">
+            <img alt="Minecraft client screenshot" src={screenshot.dataUrl} />
+            <figcaption>{screenshot.capturedAt}</figcaption>
+          </figure>
+        ) : (
+          <p className="muted">No screenshot yet.</p>
+        )}
+      </section>
+
+      <section className="control-section">
+        <header>
+          <Gamepad2 size={18} />
+          <h2>Movement</h2>
+        </header>
+        <div className="movement-grid">
+          {Object.keys(movement).map((key) => (
+            <label key={key}>
+              <input
+                checked={movement[key as keyof typeof movement]}
+                onChange={(event) => {
+                  const next = { ...movement, [key]: event.target.checked };
+                  setMovement(next);
+                  setActionKind("set_movement");
+                  onRequestAction({
+                    actionType: "set_movement",
+                    parameters: { movement: next },
+                    controlEpoch,
+                  }).catch(() => undefined);
+                }}
+                type="checkbox"
+              />
+              <span>{key}</span>
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <section className="control-section">
+        <header>
           <Send size={18} />
           <h2>Client actions</h2>
         </header>
@@ -104,26 +234,39 @@ export function ControlPanel({
           <label>
             <span>Type</span>
             <select
-              onChange={(event) =>
-                setActionForm({
-                  ...actionForm,
-                  actionType: event.target.value === "send_command" ? "send_command" : "send_chat",
-                })
-              }
-              value={actionForm.actionType}
+              onChange={(event) => setActionKind(event.target.value as ActionKind)}
+              value={actionKind}
             >
               <option value="send_chat">send_chat</option>
               <option value="send_command">send_command</option>
+              <option value="set_movement">set_movement</option>
+              <option value="set_render_mode">set_render_mode</option>
+              <option value="capture_screenshot">capture_screenshot</option>
             </select>
           </label>
-          <label>
-            <span>Text</span>
-            <input
-              onChange={(event) => setActionForm({ ...actionForm, text: event.target.value })}
-              placeholder="Hello"
-              value={actionForm.text}
-            />
-          </label>
+          {actionKind === "send_chat" || actionKind === "send_command" ? (
+            <label>
+              <span>Text</span>
+              <input
+                onChange={(event) => setText(event.target.value)}
+                placeholder="Hello"
+                value={text}
+              />
+            </label>
+          ) : null}
+          {actionKind === "set_render_mode" ? (
+            <label>
+              <span>Mode</span>
+              <select
+                onChange={(event) => setRenderMode(event.target.value as RenderMode)}
+                value={renderMode}
+              >
+                <option value="ECONOMY">ECONOMY</option>
+                <option value="OBSERVE">OBSERVE</option>
+                <option value="INTERACTIVE">INTERACTIVE</option>
+              </select>
+            </label>
+          ) : null}
           <button onClick={submitAction} type="button">
             <Send size={17} />
             Send
@@ -135,7 +278,7 @@ export function ControlPanel({
             <thead>
               <tr>
                 <th>Type</th>
-                <th>Text</th>
+                <th>Input</th>
                 <th>Status</th>
                 <th>Result</th>
               </tr>
@@ -144,7 +287,7 @@ export function ControlPanel({
               {actions.map((action) => (
                 <tr key={action.id}>
                   <td>{action.actionType}</td>
-                  <td>{action.parameters.text}</td>
+                  <td>{describeAction(action)}</td>
                   <td>
                     <span className={`status-pill ${action.status.toLowerCase()}`}>
                       {action.status}
@@ -257,4 +400,25 @@ export function ControlPanel({
       </section>
     </div>
   );
+}
+
+function describeAction(action: ActionRecord): string {
+  if (action.parameters.text) {
+    return action.parameters.text;
+  }
+
+  if (action.parameters.mode) {
+    return action.parameters.mode;
+  }
+
+  if (action.parameters.movement) {
+    return (
+      Object.entries(action.parameters.movement)
+        .filter(([, enabled]) => enabled)
+        .map(([key]) => key)
+        .join(", ") || "stop"
+    );
+  }
+
+  return "-";
 }

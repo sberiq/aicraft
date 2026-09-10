@@ -5,6 +5,7 @@ import {
   ClipboardList,
   Copy,
   House,
+  KeyRound,
   Network,
   Plug,
   RefreshCw,
@@ -19,15 +20,24 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 import { ProfilesPanel } from "./ProfilesPanel";
 import { ControlPanel } from "./ControlPanel";
+import { SecretsPanel } from "./SecretsPanel";
 import type { ConnectorKind, Status } from "./types";
 
-type TabId = "overview" | "deployment" | "connections" | "profiles" | "control" | "onboarding";
+type TabId =
+  | "overview"
+  | "deployment"
+  | "connections"
+  | "profiles"
+  | "secrets"
+  | "control"
+  | "onboarding";
 
 const tabs: Array<{ id: TabId; label: string; icon: typeof House }> = [
   { id: "overview", label: "Обзор", icon: Activity },
   { id: "deployment", label: "Deployment", icon: Server },
   { id: "connections", label: "Connections", icon: Network },
   { id: "profiles", label: "Profiles", icon: SlidersHorizontal },
+  { id: "secrets", label: "Secrets", icon: KeyRound },
   { id: "control", label: "Control", icon: ClipboardList },
   { id: "onboarding", label: "Onboarding", icon: Rocket },
 ];
@@ -145,6 +155,24 @@ export function App() {
   const requestAction = async (input: Parameters<typeof api.requestAction>[0]) => {
     await run("request-action", async () => {
       await api.requestAction(input);
+    });
+  };
+
+  const createSecret = async (input: Parameters<typeof api.createSecret>[0]) => {
+    await run("create-secret", async () => {
+      await api.createSecret(input);
+    });
+  };
+
+  const deleteSecret = async (id: string) => {
+    await run(`delete-secret-${id}`, async () => {
+      await api.deleteSecret(id);
+    });
+  };
+
+  const serverLogin = async (secretId: string) => {
+    await run(`server-login-${secretId}`, async () => {
+      await api.serverLogin(secretId);
     });
   };
 
@@ -410,12 +438,22 @@ export function App() {
           />
         ) : null}
 
+        {activeTab === "secrets" ? (
+          <SecretsPanel
+            onCreateSecret={createSecret}
+            onDeleteSecret={deleteSecret}
+            onServerLogin={serverLogin}
+            secrets={status?.secrets ?? []}
+          />
+        ) : null}
+
         {activeTab === "control" ? (
           <ControlPanel
             actions={status?.actions ?? []}
             controlEpoch={status?.controlEpoch ?? 0}
             controlOwner={status?.controlOwner ?? "NONE"}
             onRequestAction={requestAction}
+            screenshot={status?.screenshot ?? null}
             tasks={status?.tasks ?? []}
             onCancelTask={cancelTask}
             onRunTask={runTask}

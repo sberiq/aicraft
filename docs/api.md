@@ -33,6 +33,13 @@ All HTTP responses use JSON. Runtime errors use:
 - `GET /api/connectors` - connector registry and health.
 - `DELETE /api/connectors/:id/token` - revoke a connector token.
 
+### Secrets and server login
+
+- `GET /api/secrets` - list secret metadata without values.
+- `POST /api/secrets` - encrypt and store an auth password or API key.
+- `DELETE /api/secrets/:id` - delete a secret.
+- `POST /api/auth/login` - send a known server-login command to the paired client using a stored secret.
+
 ### Profiles
 
 - `GET /api/profiles` - active profile IDs and profile catalogs.
@@ -52,7 +59,7 @@ All HTTP responses use JSON. Runtime errors use:
 - `GET /api/actions` - list client actions.
 - `POST /api/actions` - request a safe client action with the current `controlEpoch`.
 
-The first supported client actions are `send_chat` and `send_command`. They are executed through the real Minecraft client's network handler.
+Supported client actions are `send_chat`, `send_command`, `set_movement`, `set_render_mode`, and `capture_screenshot`. Chat and commands use the real client network handler, movement uses normal key bindings, render modes use Minecraft graphics options, and screenshots are captured from the client framebuffer.
 
 ## Connector WebSocket
 

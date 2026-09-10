@@ -10,6 +10,9 @@
   - pairing and long-term token storage;
   - heartbeat;
   - real in-game snapshots with position, health, hunger, dimension, and timestamp.
+  - normal movement through Minecraft key bindings;
+  - render modes `ECONOMY`, `OBSERVE`, and `INTERACTIVE`;
+  - framebuffer screenshot capture as base64 PNG.
 - Optional Paper server integration plugin builds successfully.
 - Controller service provides:
   - health and status APIs;
@@ -19,21 +22,25 @@
   - client, server, identity, and brain profiles;
   - active profile switching;
   - task queue and cancellation;
-  - deterministic built-in planner for `send chat` and `send command` tasks;
+  - deterministic built-in planner for chat, command, movement, render-mode, and screenshot tasks;
   - `AGENT` / `HUMAN` control arbitration;
-  - safe client actions `send_chat` and `send_command` with `controlEpoch` checks;
+  - safe client actions for chat, commands, movement, render modes, and screenshots with `controlEpoch` checks;
   - SQLite persistence.
+  - AES-256-GCM secret storage;
+  - server login actions that never persist plaintext passwords.
 - Dashboard provides:
   - overview and live status polling;
   - Deployment topology switch;
   - Connections pairing and connector revocation;
   - Profiles for client, identity, server, and brain;
   - Control screen with manual takeover and task creation.
-  - Client actions screen for chat and server commands.
+  - Client actions screen for chat, commands, movement, render modes, and screenshots.
+  - Live screenshot display.
+  - Secrets screen with metadata-only secret list and server login.
 
 ## Verification
 
-- Node tests: 48 passed.
+- Node tests: 57 passed.
 - TypeScript typecheck: passed.
 - Controller production build: passed.
 - Panel production build: passed.
@@ -44,8 +51,8 @@
 
 ## Next implementation milestone
 
-1. Add built-in brain execution loop and skill contracts.
-2. Add client action execution beyond snapshots.
-3. Add render-mode control and screenshot capture.
+1. Add real Minecraft server connection smoke test.
+2. Add inventory, mining, crafting, and navigation skills.
+3. Add external brain adapter and memory model.
 4. Add real Minecraft server connection smoke test.
-5. Add authentication secret storage and login handlers.
+5. Add long-run performance and deployment validation.

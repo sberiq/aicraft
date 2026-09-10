@@ -64,3 +64,9 @@ The client replies with:
   "result": "Action sent through the Minecraft client"
 }
 ```
+
+Additional action types:
+
+- `set_movement`: sets normal key-binding state for forward, back, left, right, jump, sneak, and sprint.
+- `set_render_mode`: applies `ECONOMY`, `OBSERVE`, or `INTERACTIVE` graphics profiles.
+- `capture_screenshot`: captures the framebuffer and returns base64 PNG data.

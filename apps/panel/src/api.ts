@@ -53,6 +53,7 @@ export const api = {
     minecraftVersion: string;
     authMode: "MICROSOFT" | "OFFLINE_SERVER";
     offlineNickname?: string | undefined;
+    loginCommandTemplate?: string | undefined;
     clientProfileId: string;
   }) =>
     request<Profiles["serverProfiles"][number]>("/api/profiles/server", {
@@ -98,13 +99,31 @@ export const api = {
       body: JSON.stringify({ owner }),
     }),
   requestAction: (input: {
-    actionType: "send_chat" | "send_command";
-    parameters: { text: string };
+    actionType: Status["actions"][number]["actionType"];
+    parameters: Status["actions"][number]["parameters"];
     controlEpoch: number;
   }) =>
     request<Status["actions"][number]>("/api/actions", {
       method: "POST",
       body: JSON.stringify(input),
+    }),
+  createSecret: (input: {
+    name: string;
+    kind: "auth_password" | "api_key";
+    value: string;
+  }) =>
+    request<Status["secrets"][number]>("/api/secrets", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  deleteSecret: (id: string) =>
+    request<{ status: string; secretId: string }>(`/api/secrets/${id}`, {
+      method: "DELETE",
+    }),
+  serverLogin: (secretId: string) =>
+    request<{ actionId: string; status: string }>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ secretId }),
     }),
   startOnboarding: (displayName: string) =>
     request<Status["onboarding"]>("/api/onboarding/start", {

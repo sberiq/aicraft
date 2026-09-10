@@ -31,6 +31,7 @@ interface ProfilesPanelProps {
     minecraftVersion: string;
     authMode: "MICROSOFT" | "OFFLINE_SERVER";
     offlineNickname?: string | undefined;
+    loginCommandTemplate?: string | undefined;
     clientProfileId: string;
   }) => Promise<void>;
   onCreateBrain: (input: {
@@ -49,6 +50,7 @@ interface ServerForm {
   minecraftVersion: string;
   authMode: "MICROSOFT" | "OFFLINE_SERVER";
   offlineNickname: string;
+  loginCommandTemplate: string;
 }
 
 export function ProfilesPanel({
@@ -79,6 +81,7 @@ export function ProfilesPanel({
     minecraftVersion: "1.20.2",
     authMode: "OFFLINE_SERVER" as "MICROSOFT" | "OFFLINE_SERVER",
     offlineNickname: "AiCraft",
+    loginCommandTemplate: "/login {secret}",
   });
   const [brainForm, setBrainForm] = useState({
     mode: "BUILT_IN" as "BUILT_IN" | "EXTERNAL",
@@ -113,6 +116,7 @@ export function ProfilesPanel({
       clientProfileId: activeClientId,
       offlineNickname:
         serverForm.authMode === "OFFLINE_SERVER" ? serverForm.offlineNickname : undefined,
+      loginCommandTemplate: serverForm.loginCommandTemplate || undefined,
     });
   };
 
@@ -303,6 +307,14 @@ export function ProfilesPanel({
                 setServerForm({ ...serverForm, offlineNickname: event.target.value })
               }
               value={serverForm.offlineNickname}
+            />
+          </Field>
+          <Field label="Login command">
+            <input
+              onChange={(event) =>
+                setServerForm({ ...serverForm, loginCommandTemplate: event.target.value })
+              }
+              value={serverForm.loginCommandTemplate}
             />
           </Field>
           <button onClick={createServer} type="button">

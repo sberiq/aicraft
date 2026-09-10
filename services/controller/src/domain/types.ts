@@ -6,7 +6,14 @@ export type BrainMode = "BUILT_IN" | "EXTERNAL";
 export type AuthMode = "MICROSOFT" | "OFFLINE_SERVER";
 export type ControlOwner = "NONE" | "AGENT" | "HUMAN";
 export type TaskStatus = "QUEUED" | "RUNNING" | "BLOCKED" | "SUCCEEDED" | "FAILED" | "CANCELLED";
-export type ActionType = "send_chat" | "send_command";
+export type RenderMode = "ECONOMY" | "OBSERVE" | "INTERACTIVE";
+export type ActionType =
+  | "send_chat"
+  | "send_command"
+  | "set_movement"
+  | "set_render_mode"
+  | "capture_screenshot"
+  | "server_login";
 export type ActionStatus = "PENDING" | "SUCCEEDED" | "FAILED" | "UNKNOWN";
 
 export interface OwnerProfile {
@@ -51,6 +58,7 @@ export interface ServerProfile {
   minecraftVersion: string;
   authMode: AuthMode;
   offlineNickname?: string | undefined;
+  loginCommandTemplate?: string | undefined;
   clientProfileId: string;
 }
 
@@ -126,11 +134,28 @@ export interface ActionRecord {
   connectorId: string;
   actionType: ActionType;
   parameters: {
-    text: string;
+    text?: string | undefined;
+    mode?: RenderMode | undefined;
+    movement?: {
+      forward: boolean;
+      back: boolean;
+      left: boolean;
+      right: boolean;
+      jump: boolean;
+      sneak: boolean;
+      sprint: boolean;
+    } | undefined;
+    secretId?: string | undefined;
   };
   status: ActionStatus;
   controlEpoch: number;
   requestedAt: string;
   completedAt: string | null;
   result?: string | undefined;
+}
+
+export interface CapturedScreenshot {
+  actionId: string;
+  dataUrl: string;
+  capturedAt: string;
 }

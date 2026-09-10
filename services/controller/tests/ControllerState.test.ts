@@ -229,4 +229,80 @@ describe("ControllerState", () => {
     expect(blocked.status).toBe("BLOCKED");
     expect(blocked.result).toContain("No supported built-in skill");
   });
+
+  it("runs a movement task through the built-in planner", () => {
+    const state = new ControllerState();
+    const grant = state.createPairingGrant("client_mod");
+    state.pairConnector({
+      pairingCode: grant.code,
+      kind: "client_mod",
+      name: "Movement client",
+      protocolVersion: 1,
+    });
+    state.setControlOwner("AGENT");
+    const task = state.submitTask({
+      title: "Move forward",
+      goal: "set movement: forward, sprint",
+      priority: 1,
+      author: "owner",
+    });
+    state.runTask(task.id);
+    const action = state.listActions()[0];
+
+    expect(action?.actionType).toBe("set_movement");
+    expect(action?.parameters.movement?.forward).toBe(true);
+    expect(action?.parameters.movement?.sprint).toBe(true);
+    expect(action?.parameters.movement?.back).toBe(false);
+  });
+
+  it("runs a render-mode task through the built-in planner", () => {
+    const state = new ControllerState();
+    const grant = state.createPairingGrant("client_mod");
+    state.pairConnector({
+      pairingCode: grant.code,
+      kind: "client_mod",
+      name: "Render client",
+      protocolVersion: 1,
+    });
+    state.setControlOwner("AGENT");
+    const task = state.submitTask({
+      title: "Enable observation",
+      goal: "set render mode: OBSERVE",
+      priority: 1,
+      author: "owner",
+    });
+    state.runTask(task.id);
+    const action = state.listActions()[0];
+
+    expect(action?.actionType).toBe("set_render_mode");
+    expect(action?.parameters.mode).toBe("OBSERVE");
+  });
+
+  it("stores the latest screenshot without persisting it in actions", () => {
+    const state = new ControllerState();
+    const grant = state.createPairingGrant("client_mod");
+    state.pairConnector({
+      pairingCode: grant.code,
+      kind: "client_mod",
+      name: "Screenshot client",
+      protocolVersion: 1,
+    });
+    state.setControlOwner("AGENT");
+    const action = state.requestAction({
+      actionType: "capture_screenshot",
+      parameters: {},
+      controlEpoch: state.describe().controlEpoch,
+    });
+    state.completeAction({
+      actionId: action.id,
+      status: "SUCCEEDED",
+      result: "Screenshot captured",
+      screenshotBase64: "aWNjcmFmdC1zbW9rZS1wbmc=",
+    });
+
+    expect(state.describe().screenshot?.dataUrl).toBe(
+      "data:image/png;base64,aWNjcmFmdC1zbW9rZS1wbmc=",
+    );
+    expect(state.exportSnapshot().actions[0]?.result).toBe("Screenshot captured");
+  });
 });
