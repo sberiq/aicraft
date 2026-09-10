@@ -606,14 +606,26 @@ export class ControllerState {
                 ? { yaw: plan.yaw, pitch: plan.pitch }
               : plan.actionType === "select_hotbar"
                 ? { slot: plan.slot }
-                : plan.actionType === "navigate_to"
+              : plan.actionType === "navigate_to"
                   ? {
                       x: plan.x,
                       z: plan.z,
                       tolerance: plan.tolerance,
                       timeoutMs: plan.timeoutMs,
                     }
-                  : {},
+                  : plan.actionType === "screen_click"
+                    ? {
+                        pointerX: plan.pointerX,
+                        pointerY: plan.pointerY,
+                        button: plan.button,
+                      }
+                    : plan.actionType === "screen_scroll"
+                      ? {
+                          pointerX: plan.pointerX,
+                          pointerY: plan.pointerY,
+                          amount: plan.amount,
+                        }
+                      : {},
       controlEpoch: this.controlEpoch,
       taskId: task.id,
     });
@@ -846,6 +858,18 @@ function planBuiltInTask(goal: string):
   | {
       actionType: "cancel_navigation";
     }
+  | {
+      actionType: "screen_click";
+      pointerX: number;
+      pointerY: number;
+      button: number;
+    }
+  | {
+      actionType: "screen_scroll";
+      pointerX: number;
+      pointerY: number;
+      amount: number;
+    }
   | null {
   const chatMatch = /^send chat:\s*(.+)$/i.exec(goal);
   if (chatMatch?.[1]) {
@@ -918,6 +942,30 @@ function planBuiltInTask(goal: string):
 
   if (/^cancel navigation$/i.test(goal)) {
     return { actionType: "cancel_navigation" };
+  }
+
+  const screenClickMatch =
+      /^click screen:\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\s+([0-2]))?$/i
+          .exec(goal);
+  if (screenClickMatch?.[1] && screenClickMatch[2]) {
+    return {
+      actionType: "screen_click",
+      pointerX: Number(screenClickMatch[1]),
+      pointerY: Number(screenClickMatch[2]),
+      button: screenClickMatch[3] ? Number(screenClickMatch[3]) : 0,
+    };
+  }
+
+  const screenScrollMatch =
+      /^scroll screen:\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)$/i
+          .exec(goal);
+  if (screenScrollMatch?.[1] && screenScrollMatch[2] && screenScrollMatch[3]) {
+    return {
+      actionType: "screen_scroll",
+      pointerX: Number(screenScrollMatch[1]),
+      pointerY: Number(screenScrollMatch[2]),
+      amount: Number(screenScrollMatch[3]),
+    };
   }
 
   const movementMatch = /^set movement:\s*(.*)$/i.exec(goal);

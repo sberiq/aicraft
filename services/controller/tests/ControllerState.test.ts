@@ -405,6 +405,40 @@ describe("ControllerState", () => {
     expect(actions[1]?.actionType).toBe("cancel_navigation");
   });
 
+  it("plans GUI click and scroll tasks", () => {
+    const state = new ControllerState();
+    const grant = state.createPairingGrant("client_mod");
+    state.pairConnector({
+      pairingCode: grant.code,
+      kind: "client_mod",
+      name: "GUI client",
+      protocolVersion: 1,
+    });
+    state.setControlOwner("AGENT");
+    const clickTask = state.submitTask({
+      title: "Click crafting slot",
+      goal: "click screen: 100 120 0",
+      priority: 1,
+      author: "owner",
+    });
+    state.runTask(clickTask.id);
+    const scrollTask = state.submitTask({
+      title: "Scroll recipe list",
+      goal: "scroll screen: 100 120 -2",
+      priority: 1,
+      author: "owner",
+    });
+    state.runTask(scrollTask.id);
+
+    const actions = state.listActions();
+    expect(actions[0]?.actionType).toBe("screen_click");
+    expect(actions[0]?.parameters.pointerX).toBe(100);
+    expect(actions[0]?.parameters.pointerY).toBe(120);
+    expect(actions[0]?.parameters.button).toBe(0);
+    expect(actions[1]?.actionType).toBe("screen_scroll");
+    expect(actions[1]?.parameters.amount).toBe(-2);
+  });
+
   it("creates, updates, and deletes memory records", () => {
     const state = new ControllerState();
     const memory = state.createMemory({

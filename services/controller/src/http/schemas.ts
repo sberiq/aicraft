@@ -169,6 +169,24 @@ export const requestActionSchema = z.discriminatedUnion("actionType", [
     parameters: z.object({}),
     controlEpoch: z.number().int().positive(),
   }),
+  z.object({
+    actionType: z.literal("screen_click"),
+    parameters: z.object({
+      pointerX: z.number().min(0).max(8192),
+      pointerY: z.number().min(0).max(4320),
+      button: z.number().int().min(0).max(2).default(0),
+    }),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("screen_scroll"),
+    parameters: z.object({
+      pointerX: z.number().min(0).max(8192),
+      pointerY: z.number().min(0).max(4320),
+      amount: z.number().min(-10).max(10),
+    }),
+    controlEpoch: z.number().int().positive(),
+  }),
 ]);
 
 export const createSecretSchema = z.object({

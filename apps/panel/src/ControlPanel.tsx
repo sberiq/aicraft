@@ -70,6 +70,10 @@ export function ControlPanel({
   const [navigateZ, setNavigateZ] = useState("0");
   const [navigateTolerance, setNavigateTolerance] = useState("1.5");
   const [navigateTimeout, setNavigateTimeout] = useState("120000");
+  const [pointerX, setPointerX] = useState("0");
+  const [pointerY, setPointerY] = useState("0");
+  const [mouseButton, setMouseButton] = useState("0");
+  const [scrollAmount, setScrollAmount] = useState("1");
   const [renderMode, setRenderMode] = useState<RenderMode>("ECONOMY");
   const [movement, setMovement] = useState({
     forward: false,
@@ -193,6 +197,31 @@ export function ControlPanel({
         controlEpoch,
       });
       return;
+    }
+
+    if (actionKind === "screen_click") {
+      const x = Number(pointerX);
+      const y = Number(pointerY);
+      const button = Number(mouseButton);
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isInteger(button)) return;
+      void onRequestAction({
+        actionType: "screen_click",
+        parameters: { pointerX: x, pointerY: y, button },
+        controlEpoch,
+      });
+      return;
+    }
+
+    if (actionKind === "screen_scroll") {
+      const x = Number(pointerX);
+      const y = Number(pointerY);
+      const amount = Number(scrollAmount);
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(amount)) return;
+      void onRequestAction({
+        actionType: "screen_scroll",
+        parameters: { pointerX: x, pointerY: y, amount },
+        controlEpoch,
+      });
     }
 
     void onRequestAction({
@@ -327,6 +356,8 @@ export function ControlPanel({
               <option value="drop_item">drop_item</option>
               <option value="navigate_to">navigate_to</option>
               <option value="cancel_navigation">cancel_navigation</option>
+              <option value="screen_click">screen_click</option>
+              <option value="screen_scroll">screen_scroll</option>
             </select>
           </label>
           {actionKind === "send_chat" || actionKind === "send_command" ? (
@@ -419,6 +450,48 @@ export function ControlPanel({
                 />
               </label>
             </>
+          ) : null}
+          {actionKind === "screen_click" || actionKind === "screen_scroll" ? (
+            <>
+              <label>
+                <span>X</span>
+                <input
+                  onChange={(event) => setPointerX(event.target.value)}
+                  type="number"
+                  value={pointerX}
+                />
+              </label>
+              <label>
+                <span>Y</span>
+                <input
+                  onChange={(event) => setPointerY(event.target.value)}
+                  type="number"
+                  value={pointerY}
+                />
+              </label>
+            </>
+          ) : null}
+          {actionKind === "screen_click" ? (
+            <label>
+              <span>Button</span>
+              <input
+                max={2}
+                min={0}
+                onChange={(event) => setMouseButton(event.target.value)}
+                type="number"
+                value={mouseButton}
+              />
+            </label>
+          ) : null}
+          {actionKind === "screen_scroll" ? (
+            <label>
+              <span>Amount</span>
+              <input
+                onChange={(event) => setScrollAmount(event.target.value)}
+                type="number"
+                value={scrollAmount}
+              />
+            </label>
           ) : null}
           <button onClick={submitAction} type="button">
             <Send size={17} />
@@ -574,6 +647,10 @@ function describeAction(action: ActionRecord): string {
 
   if (action.parameters.x !== undefined || action.parameters.z !== undefined) {
     return `x ${action.parameters.x ?? 0}, z ${action.parameters.z ?? 0}`;
+  }
+
+  if (action.parameters.pointerX !== undefined || action.parameters.pointerY !== undefined) {
+    return `pointer ${action.parameters.pointerX ?? 0}, ${action.parameters.pointerY ?? 0}`;
   }
 
   if (action.parameters.movement) {

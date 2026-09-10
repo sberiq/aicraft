@@ -27,7 +27,9 @@ export type ActionType =
   | "close_screen"
   | "drop_item"
   | "navigate_to"
-  | "cancel_navigation";
+  | "cancel_navigation"
+  | "screen_click"
+  | "screen_scroll";
 export type ActionStatus = "PENDING" | "SUCCEEDED" | "FAILED" | "UNKNOWN";
 
 export interface Connector {
@@ -145,6 +147,10 @@ export interface ActionRecord {
     z?: number;
     tolerance?: number;
     timeoutMs?: number;
+    pointerX?: number;
+    pointerY?: number;
+    button?: number;
+    amount?: number;
   };
   status: ActionStatus;
   controlEpoch: number;

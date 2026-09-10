@@ -72,5 +72,7 @@ Additional action types:
 - `capture_screenshot`: captures the framebuffer and returns base64 PNG data.
 - `navigate_to`: holds normal movement keys while walking toward X/Z, stops within tolerance, and times out safely.
 - `cancel_navigation`: releases navigation and movement keys.
+- `screen_click`: sends a click to the currently open Minecraft screen.
+- `screen_scroll`: sends vertical scrolling to the currently open Minecraft screen.
 
 When control owner changes away from `AGENT`, the controller sends `control.revoked`. The client cancels active navigation and releases all movement keys.

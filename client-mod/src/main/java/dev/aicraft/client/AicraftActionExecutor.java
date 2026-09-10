@@ -112,6 +112,29 @@ public final class AicraftActionExecutor {
                 client.setScreen(null);
             } else if ("drop_item".equals(actionType)) {
                 tapKey(client.options.dropKey);
+            } else if ("screen_click".equals(actionType)) {
+                if (client.currentScreen == null) {
+                    response.addProperty("status", "FAILED");
+                    response.addProperty("result", "No screen is open");
+                    return response;
+                }
+                client.currentScreen.mouseClicked(
+                        parameters.get("pointerX").getAsDouble(),
+                        parameters.get("pointerY").getAsDouble(),
+                        parameters.has("button") ? parameters.get("button").getAsInt() : 0
+                );
+            } else if ("screen_scroll".equals(actionType)) {
+                if (client.currentScreen == null) {
+                    response.addProperty("status", "FAILED");
+                    response.addProperty("result", "No screen is open");
+                    return response;
+                }
+                client.currentScreen.mouseScrolled(
+                        parameters.get("pointerX").getAsDouble(),
+                        parameters.get("pointerY").getAsDouble(),
+                        0.0,
+                        parameters.get("amount").getAsDouble()
+                );
             } else {
                 response.addProperty("status", "FAILED");
                 response.addProperty("result", "Unsupported action type");
@@ -195,6 +218,8 @@ public final class AicraftActionExecutor {
             case "open_inventory" -> "Inventory screen opened";
             case "close_screen" -> "Client screen closed";
             case "drop_item" -> "Drop item key sent through normal key binding";
+            case "screen_click" -> "Screen click processed by Minecraft GUI";
+            case "screen_scroll" -> "Screen scroll processed by Minecraft GUI";
             default -> "Action sent through the Minecraft client";
         };
     }
