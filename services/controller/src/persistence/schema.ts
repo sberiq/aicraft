@@ -104,7 +104,7 @@ export const serializedControllerStateSchema = z.object({
       completedAt: z.string().datetime().nullable(),
       result: z.string().optional(),
     }),
-  ),
+  ).default([]),
 });
 
 export type SerializedControllerState = z.infer<typeof serializedControllerStateSchema>;
