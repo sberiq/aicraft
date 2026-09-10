@@ -8,6 +8,9 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
       LOG_LEVEL: info
+      AICRAFT_DB_PATH: /data/aicraft.sqlite
+    volumes:
+      - controller-state:/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
       interval: 10s
@@ -25,3 +28,6 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
+
+volumes:
+  controller-state:

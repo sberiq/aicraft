@@ -18,6 +18,7 @@ public final class AicraftConfig {
     public String pairingCode;
     public String connectorToken;
     public int heartbeatIntervalMs;
+    public int snapshotIntervalMs;
     public boolean autoReconnect;
 
     private AicraftConfig() {
@@ -27,6 +28,7 @@ public final class AicraftConfig {
         this.pairingCode = "";
         this.connectorToken = "";
         this.heartbeatIntervalMs = 5000;
+        this.snapshotIntervalMs = 1000;
         this.autoReconnect = true;
     }
 

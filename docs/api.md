@@ -33,6 +33,22 @@ All HTTP responses use JSON. Runtime errors use:
 - `GET /api/connectors` - connector registry and health.
 - `DELETE /api/connectors/:id/token` - revoke a connector token.
 
+### Profiles
+
+- `GET /api/profiles` - active profile IDs and profile catalogs.
+- `POST /api/profiles/client` - create a client profile.
+- `POST /api/profiles/server` - create a server profile.
+- `POST /api/profiles/auth` - create a Microsoft or offline identity profile.
+- `POST /api/profiles/brain` - create a built-in or external brain profile.
+- `POST /api/profiles/active` - change active profiles.
+
+### Tasks and control
+
+- `GET /api/tasks` - list tasks in priority order.
+- `POST /api/tasks` - create a task.
+- `POST /api/tasks/:id/cancel` - cancel a task.
+- `POST /api/control` - set control owner to `NONE`, `AGENT`, or `HUMAN`.
+
 ## Connector WebSocket
 
 Endpoint: `/connector`

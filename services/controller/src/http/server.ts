@@ -3,15 +3,24 @@ import websocket from "@fastify/websocket";
 import type { WebSocket } from "ws";
 import { z } from "zod";
 import { ControllerState } from "../domain/ControllerState.js";
+import type { ControllerStateStore } from "../persistence/sqlite.js";
 import { connectorMessageSchema } from "../connector/messages.js";
 import {
+  activeProfilesSchema,
+  authProfileSchema,
+  brainProfileSchema,
+  clientProfileSchema,
   createPairingSchema,
+  createTaskSchema,
+  serverProfileSchema,
   setTopologySchema,
+  setControlOwnerSchema,
   startOnboardingSchema,
 } from "./schemas.js";
 
 export interface BuildServerOptions {
   state?: ControllerState;
+  store?: ControllerStateStore;
   version?: string;
 }
 
@@ -27,12 +36,69 @@ export async function buildServer(options: BuildServerOptions = {}) {
 
   await app.register(websocket);
 
+  if (options.store) {
+    const store = options.store;
+    state.setChangeListener(() => store.save(state.exportSnapshot()));
+    const persisted = store.load();
+    if (persisted && !options.state) {
+      state.restoreSnapshot(persisted);
+    }
+    app.addHook("onClose", async () => {
+      store.close();
+    });
+  }
+
   app.get("/api/health", async () => ({
     status: "ok",
     version,
   }));
 
   app.get("/api/status", async () => state.describe());
+  app.get("/api/profiles", async () => state.listProfiles());
+
+  app.post("/api/profiles/client", async (request) => {
+    const input = clientProfileSchema.parse(request.body);
+    return state.createClientProfile(input);
+  });
+
+  app.post("/api/profiles/server", async (request) => {
+    const input = serverProfileSchema.parse(request.body);
+    return state.createServerProfile(input);
+  });
+
+  app.post("/api/profiles/auth", async (request) => {
+    const input = authProfileSchema.parse(request.body);
+    return state.createAuthProfile(input);
+  });
+
+  app.post("/api/profiles/brain", async (request) => {
+    const input = brainProfileSchema.parse(request.body);
+    return state.createBrainProfile(input);
+  });
+
+  app.post("/api/profiles/active", async (request) => {
+    const input = activeProfilesSchema.parse(request.body);
+    return state.setActiveProfiles(input);
+  });
+
+  app.get("/api/tasks", async () => ({
+    tasks: state.listTasks(),
+  }));
+
+  app.post("/api/tasks", async (request) => {
+    const input = createTaskSchema.parse(request.body);
+    return state.submitTask(input);
+  });
+
+  app.post("/api/tasks/:id/cancel", async (request) => {
+    const params = z.object({ id: z.string().uuid() }).parse(request.params);
+    return state.cancelTask(params.id);
+  });
+
+  app.post("/api/control", async (request) => {
+    const input = setControlOwnerSchema.parse(request.body);
+    return state.setControlOwner(input.owner);
+  });
   app.get("/api/onboarding", async () => state.getOnboardingState());
 
   app.post("/api/onboarding/start", async (request, reply) => {

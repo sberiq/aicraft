@@ -22,9 +22,11 @@ public final class AicraftConnector {
     private final AtomicBoolean connected = new AtomicBoolean(false);
     private final ScheduledExecutorService scheduler;
     private final AicraftConfig config;
+    private final AicraftSnapshotProvider snapshotProvider;
 
-    public AicraftConnector(AicraftConfig config) {
+    public AicraftConnector(AicraftConfig config, AicraftSnapshotProvider snapshotProvider) {
         this.config = config;
+        this.snapshotProvider = snapshotProvider;
         this.scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
             Thread thread = new Thread(runnable, "aicraft-connector");
             thread.setDaemon(true);
@@ -40,6 +42,7 @@ public final class AicraftConnector {
 
         connect();
         scheduler.scheduleAtFixedRate(this::sendHeartbeat, config.heartbeatIntervalMs, config.heartbeatIntervalMs, TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(this::sendSnapshot, config.snapshotIntervalMs, config.snapshotIntervalMs, TimeUnit.MILLISECONDS);
     }
 
     public synchronized void reconnect(String endpoint, String pairingCode) {
@@ -144,6 +147,19 @@ public final class AicraftConnector {
         } else if (config.autoReconnect) {
             connect();
         }
+    }
+
+    private void sendSnapshot() {
+        WebSocket current = socket.get();
+        JsonObject snapshot = snapshotProvider.snapshot();
+        if (current == null || !connected.get() || snapshot == null) {
+            return;
+        }
+
+        JsonObject message = new JsonObject();
+        message.addProperty("type", "snapshot");
+        message.add("payload", snapshot);
+        send(current, GSON.toJson(message));
     }
 
     private void send(WebSocket webSocket, String message) {

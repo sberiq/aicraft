@@ -20,6 +20,22 @@ npm test
 npm run build
 ```
 
+The Fabric mod can be built separately:
+
+```bash
+cd client-mod
+./gradlew build
+```
+
+The optional Paper integration plugin can be built with:
+
+```bash
+cd server-plugin
+mvn package
+```
+
+Current implementation status is documented in [docs/status.md](docs/status.md).
+
 The controller and panel use Node.js 22 or newer. The flagship Minecraft 1.20.2 profile targets Java 17.
 
 ## Repository map

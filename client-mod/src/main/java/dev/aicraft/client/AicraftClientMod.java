@@ -16,7 +16,7 @@ public final class AicraftClientMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         AicraftConfig config = AicraftConfig.load();
-        connector = new AicraftConnector(config);
+        connector = new AicraftConnector(config, new AicraftSnapshotProvider());
         connector.start();
 
         AicraftCommands.register(connector);

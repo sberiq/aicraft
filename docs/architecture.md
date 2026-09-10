@@ -50,6 +50,12 @@ A trusted server plugin connects to the controller using the same connector mode
 - Long-term personality and project memory: selected brain mode or controller memory service.
 - Secrets: controller secret storage only.
 
+## Persistence
+
+Controller state is persisted in SQLite using Node's built-in `node:sqlite` module. The prototype stores one validated state snapshot containing onboarding, active topology, profiles, connector token hashes, tasks, and control state. Snapshots and pairing codes are intentionally not persisted.
+
+The production schema will split this snapshot into normalized tables as the task, memory, and server-profile models grow.
+
 ## Failure Rules
 
 - Loss of dashboard connection clears manual input.

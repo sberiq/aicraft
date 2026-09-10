@@ -2,6 +2,7 @@ import {
   Activity,
   Bot,
   CheckCircle2,
+  ClipboardList,
   Copy,
   House,
   Network,
@@ -10,19 +11,24 @@ import {
   Rocket,
   Server,
   ShieldCheck,
+  SlidersHorizontal,
   UserRound,
   XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "./api";
+import { ProfilesPanel } from "./ProfilesPanel";
+import { ControlPanel } from "./ControlPanel";
 import type { ConnectorKind, Status } from "./types";
 
-type TabId = "overview" | "deployment" | "connections" | "onboarding";
+type TabId = "overview" | "deployment" | "connections" | "profiles" | "control" | "onboarding";
 
 const tabs: Array<{ id: TabId; label: string; icon: typeof House }> = [
   { id: "overview", label: "Обзор", icon: Activity },
   { id: "deployment", label: "Deployment", icon: Server },
   { id: "connections", label: "Connections", icon: Network },
+  { id: "profiles", label: "Profiles", icon: SlidersHorizontal },
+  { id: "control", label: "Control", icon: ClipboardList },
   { id: "onboarding", label: "Onboarding", icon: Rocket },
 ];
 
@@ -79,6 +85,54 @@ export function App() {
     await run(`pair-${kind}`, async () => {
       const grant = await api.createPairing(kind);
       setPairing(grant.code);
+    });
+  };
+
+  const createClientProfile = async (input: Parameters<typeof api.createClientProfile>[0]) => {
+    await run("create-client-profile", async () => {
+      await api.createClientProfile(input);
+    });
+  };
+
+  const createAuthProfile = async (input: Parameters<typeof api.createAuthProfile>[0]) => {
+    await run("create-auth-profile", async () => {
+      await api.createAuthProfile(input);
+    });
+  };
+
+  const createServerProfile = async (input: Parameters<typeof api.createServerProfile>[0]) => {
+    await run("create-server-profile", async () => {
+      await api.createServerProfile(input);
+    });
+  };
+
+  const createBrainProfile = async (input: Parameters<typeof api.createBrainProfile>[0]) => {
+    await run("create-brain-profile", async () => {
+      await api.createBrainProfile(input);
+    });
+  };
+
+  const activateProfiles = async (input: Parameters<typeof api.setActiveProfiles>[0]) => {
+    await run("activate-profiles", async () => {
+      await api.setActiveProfiles(input);
+    });
+  };
+
+  const createTask = async (input: Parameters<typeof api.createTask>[0]) => {
+    await run("create-task", async () => {
+      await api.createTask(input);
+    });
+  };
+
+  const cancelTask = async (id: string) => {
+    await run(`cancel-task-${id}`, async () => {
+      await api.cancelTask(id);
+    });
+  };
+
+  const setControlOwner = async (owner: Status["controlOwner"]) => {
+    await run("set-control-owner", async () => {
+      await api.setControlOwner(owner);
     });
   };
 
@@ -331,6 +385,27 @@ export function App() {
               )}
             </section>
           </section>
+        ) : null}
+
+        {activeTab === "profiles" ? (
+          <ProfilesPanel
+            profiles={status?.profiles ?? null}
+            onActivate={activateProfiles}
+            onCreateAuth={createAuthProfile}
+            onCreateBrain={createBrainProfile}
+            onCreateClient={createClientProfile}
+            onCreateServer={createServerProfile}
+          />
+        ) : null}
+
+        {activeTab === "control" ? (
+          <ControlPanel
+            controlOwner={status?.controlOwner ?? "NONE"}
+            tasks={status?.tasks ?? []}
+            onCancelTask={cancelTask}
+            onSetControlOwner={setControlOwner}
+            onSubmitTask={createTask}
+          />
         ) : null}
       </main>
     </div>

@@ -4,6 +4,8 @@ export type TopologyMode = "LOCAL" | "REMOTE_CLIENT";
 export type OnboardingStatus = "not_started" | "in_progress" | "completed";
 export type BrainMode = "BUILT_IN" | "EXTERNAL";
 export type AuthMode = "MICROSOFT" | "OFFLINE_SERVER";
+export type ControlOwner = "NONE" | "AGENT" | "HUMAN";
+export type TaskStatus = "QUEUED" | "RUNNING" | "BLOCKED" | "SUCCEEDED" | "FAILED" | "CANCELLED";
 
 export interface OwnerProfile {
   id: string;
@@ -46,22 +48,44 @@ export interface ServerProfile {
   port: number;
   minecraftVersion: string;
   authMode: AuthMode;
-  offlineNickname?: string;
+  offlineNickname?: string | undefined;
   clientProfileId: string;
+}
+
+export interface AuthProfile {
+  id: string;
+  name: string;
+  mode: AuthMode;
+  offlineNickname?: string | undefined;
 }
 
 export interface BrainProfile {
   id: string;
   mode: BrainMode;
-  endpoint?: string;
-  model?: string;
-  dailyCallLimit?: number;
+  endpoint?: string | undefined;
+  model?: string | undefined;
+  dailyCallLimit?: number | undefined;
 }
 
 export interface ControllerSettings {
   activeTopology: TopologyMode;
   heartbeatIntervalMs: number;
   connectorEndpoint: string;
+}
+
+export interface ActiveProfiles {
+  clientProfileId: string | null;
+  serverProfileId: string | null;
+  authProfileId: string | null;
+  brainProfileId: string | null;
+}
+
+export interface ProfileCatalog {
+  active: ActiveProfiles;
+  clientProfiles: ClientProfile[];
+  serverProfiles: ServerProfile[];
+  authProfiles: AuthProfile[];
+  brainProfiles: BrainProfile[];
 }
 
 export interface OnboardingState {
@@ -80,4 +104,16 @@ export interface Snapshot {
   hunger: number;
   dimension?: string | undefined;
   capturedAt: string;
+}
+
+export interface AgentTask {
+  id: string;
+  title: string;
+  goal: string;
+  status: TaskStatus;
+  priority: number;
+  author: string;
+  createdAt: string;
+  updatedAt: string;
+  result?: string | undefined;
 }

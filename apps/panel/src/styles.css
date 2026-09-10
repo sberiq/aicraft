@@ -299,6 +299,176 @@ th {
   color: #9eabba;
 }
 
+.profile-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.profile-section {
+  min-width: 0;
+  border: 1px solid #303a44;
+  border-radius: 8px;
+  background: #171d23;
+  padding: 16px;
+}
+
+.profile-section header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #7ec7d8;
+  margin-bottom: 14px;
+}
+
+.profile-section h2 {
+  margin: 0;
+  font-size: 17px;
+  color: #e8edf2;
+}
+
+.profile-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.field {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.field span {
+  color: #9eabba;
+  font-size: 12px;
+}
+
+.field input,
+.field select {
+  min-height: 36px;
+  border: 1px solid #37424d;
+  border-radius: 6px;
+  background: #12181d;
+  color: inherit;
+  font: inherit;
+  padding: 0 8px;
+}
+
+.field input:disabled,
+.field select:disabled {
+  opacity: 0.5;
+}
+
+.profile-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.profile-row {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.profile-row span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.profile-row strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.profile-row small {
+  color: #9eabba;
+  overflow-wrap: anywhere;
+}
+
+.profile-row.active {
+  background: #14343f;
+  border-color: #3d7a91;
+}
+
+.control-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.control-section {
+  border: 1px solid #303a44;
+  border-radius: 8px;
+  background: #171d23;
+  padding: 16px;
+}
+
+.control-section header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #7ec7d8;
+  margin-bottom: 14px;
+}
+
+.control-section h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.control-owner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.control-owner > span {
+  font-size: 18px;
+  color: #e8edf2;
+}
+
+.control-form {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.7fr) minmax(180px, 1.3fr) 100px minmax(100px, 0.6fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.control-form label {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.control-form span {
+  color: #9eabba;
+  font-size: 12px;
+}
+
+.control-form input {
+  min-height: 36px;
+  border: 1px solid #37424d;
+  border-radius: 6px;
+  background: #12181d;
+  color: inherit;
+  font: inherit;
+  padding: 0 8px;
+}
+
+.control-form td strong,
+.control-form td small {
+  display: block;
+}
+
+.control-form td small {
+  color: #9eabba;
+  margin-top: 3px;
+}
+
 @media (max-width: 860px) {
   .panel-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
