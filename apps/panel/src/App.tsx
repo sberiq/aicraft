@@ -7,6 +7,7 @@ import {
   House,
   KeyRound,
   Network,
+  Notebook,
   Plug,
   RefreshCw,
   Rocket,
@@ -21,6 +22,7 @@ import { api } from "./api";
 import { ProfilesPanel } from "./ProfilesPanel";
 import { ControlPanel } from "./ControlPanel";
 import { SecretsPanel } from "./SecretsPanel";
+import { MemoryPanel } from "./MemoryPanel";
 import type { ConnectorKind, Status } from "./types";
 
 type TabId =
@@ -29,6 +31,7 @@ type TabId =
   | "connections"
   | "profiles"
   | "secrets"
+  | "memory"
   | "control"
   | "onboarding";
 
@@ -38,6 +41,7 @@ const tabs: Array<{ id: TabId; label: string; icon: typeof House }> = [
   { id: "connections", label: "Connections", icon: Network },
   { id: "profiles", label: "Profiles", icon: SlidersHorizontal },
   { id: "secrets", label: "Secrets", icon: KeyRound },
+  { id: "memory", label: "Memory", icon: Notebook },
   { id: "control", label: "Control", icon: ClipboardList },
   { id: "onboarding", label: "Onboarding", icon: Rocket },
 ];
@@ -173,6 +177,27 @@ export function App() {
   const serverLogin = async (secretId: string) => {
     await run(`server-login-${secretId}`, async () => {
       await api.serverLogin(secretId);
+    });
+  };
+
+  const createMemory = async (input: Parameters<typeof api.createMemory>[0]) => {
+    await run("create-memory", async () => {
+      await api.createMemory(input);
+    });
+  };
+
+  const updateMemory = async (
+    id: string,
+    input: Parameters<typeof api.updateMemory>[1],
+  ) => {
+    await run(`update-memory-${id}`, async () => {
+      await api.updateMemory(id, input);
+    });
+  };
+
+  const deleteMemory = async (id: string) => {
+    await run(`delete-memory-${id}`, async () => {
+      await api.deleteMemory(id);
     });
   };
 
@@ -430,6 +455,7 @@ export function App() {
         {activeTab === "profiles" ? (
           <ProfilesPanel
             profiles={status?.profiles ?? null}
+            secrets={status?.secrets ?? []}
             onActivate={activateProfiles}
             onCreateAuth={createAuthProfile}
             onCreateBrain={createBrainProfile}
@@ -444,6 +470,15 @@ export function App() {
             onDeleteSecret={deleteSecret}
             onServerLogin={serverLogin}
             secrets={status?.secrets ?? []}
+          />
+        ) : null}
+
+        {activeTab === "memory" ? (
+          <MemoryPanel
+            memories={status?.memories ?? []}
+            onCreateMemory={createMemory}
+            onDeleteMemory={deleteMemory}
+            onUpdateMemory={updateMemory}
           />
         ) : null}
 

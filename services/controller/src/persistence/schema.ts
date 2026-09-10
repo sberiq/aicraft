@@ -59,6 +59,7 @@ export const serializedControllerStateSchema = z.object({
       id: z.string().uuid(),
       mode: z.enum(["BUILT_IN", "EXTERNAL"]),
       endpoint: z.string().optional(),
+      tokenSecretId: z.string().uuid().optional(),
       model: z.string().optional(),
       dailyCallLimit: z.number().int().min(0).optional(),
     }),
@@ -134,6 +135,25 @@ export const serializedControllerStateSchema = z.object({
       requestedAt: z.string().datetime(),
       completedAt: z.string().datetime().nullable(),
       result: z.string().optional(),
+    }),
+  ).default([]),
+  memories: z.array(
+    z.object({
+      id: z.string().uuid(),
+      kind: z.enum(["place", "project", "promise", "server_procedure", "note"]),
+      title: z.string().min(1).max(200),
+      content: z.string().min(1).max(10000),
+      serverProfileId: z.string().uuid().optional(),
+      dimension: z.string().optional(),
+      position: z
+        .object({
+          x: z.number(),
+          y: z.number(),
+          z: z.number(),
+        })
+        .optional(),
+      createdAt: z.string().datetime(),
+      updatedAt: z.string().datetime(),
     }),
   ).default([]),
 });

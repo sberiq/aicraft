@@ -401,6 +401,58 @@ th {
   grid-column: 1 / -1;
 }
 
+.memory-form {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(90px, 1fr));
+  gap: 10px;
+}
+
+.memory-form .content-field {
+  grid-column: 1 / -1;
+}
+
+.memory-form textarea {
+  min-height: 100px;
+  border: 1px solid #37424d;
+  border-radius: 6px;
+  background: #12181d;
+  color: inherit;
+  font: inherit;
+  padding: 8px;
+  resize: vertical;
+}
+
+.memory-list {
+  display: grid;
+  gap: 10px;
+}
+
+.memory-row {
+  border: 1px solid #303a44;
+  border-radius: 6px;
+  background: #12181d;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.memory-row.active {
+  border-color: #3d7a91;
+}
+
+.memory-row strong,
+.memory-row small,
+.memory-row p {
+  display: block;
+  margin: 0;
+}
+
+.memory-row small {
+  color: #9eabba;
+  margin: 4px 0;
+}
+
 .control-layout {
   display: grid;
   gap: 14px;

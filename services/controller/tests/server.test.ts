@@ -123,4 +123,31 @@ describe("controller HTTP API", () => {
     expect(response.json().owner).toBe("HUMAN");
     await app.close();
   });
+
+  it("creates and updates memory through the API", async () => {
+    const app = await buildServer();
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/memory",
+      payload: {
+        kind: "project",
+        title: "Bridge",
+        content: "Build a bridge to the eastern island",
+      },
+    });
+    const memory = created.json();
+    const updated = await app.inject({
+      method: "PATCH",
+      url: `/api/memory/${memory.id}`,
+      payload: {
+        title: "Eastern bridge",
+        content: "Build a bridge to the eastern island and light it",
+      },
+    });
+
+    expect(created.statusCode).toBe(200);
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().title).toBe("Eastern bridge");
+    await app.close();
+  });
 });

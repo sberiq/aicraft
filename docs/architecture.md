@@ -56,6 +56,10 @@ Controller state is persisted in SQLite using Node's built-in `node:sqlite` modu
 
 The production schema will split this snapshot into normalized tables as the task, memory, and server-profile models grow.
 
+## Brain Modes
+
+`BUILT_IN` uses deterministic, testable skills. `EXTERNAL` posts the active task, latest snapshot, and brain profile to the configured HTTP endpoint, validates the returned action with Zod, and dispatches it through the same client action pipeline and `controlEpoch` checks.
+
 ## Failure Rules
 
 - Loss of dashboard connection clears manual input.

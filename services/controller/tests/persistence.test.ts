@@ -28,6 +28,11 @@ describe("SQLite state persistence", () => {
     firstState.setActiveProfiles({ clientProfileId: clientProfile.id });
     firstState.setActiveTopology("REMOTE_CLIENT");
     firstState.setControlOwner("HUMAN");
+    const memory = firstState.createMemory({
+      kind: "promise",
+      title: "Meet owner",
+      content: "Return to the main base after mining",
+    });
     const task = firstState.submitTask({
       title: "Persist task",
       goal: "Verify state restoration",
@@ -68,6 +73,8 @@ describe("SQLite state persistence", () => {
     expect(restored.tasks[0]?.id).toBe(task.id);
     expect(restored.actions[0]?.id).toBe(action.id);
     expect(restored.actions[0]?.status).toBe("SUCCEEDED");
+    expect(restored.memories[0]?.id).toBe(memory.id);
+    expect(restored.memories[0]?.kind).toBe("promise");
     secondStore.close();
   });
 });

@@ -7,6 +7,12 @@ export type AuthMode = "MICROSOFT" | "OFFLINE_SERVER";
 export type ControlOwner = "NONE" | "AGENT" | "HUMAN";
 export type TaskStatus = "QUEUED" | "RUNNING" | "BLOCKED" | "SUCCEEDED" | "FAILED" | "CANCELLED";
 export type RenderMode = "ECONOMY" | "OBSERVE" | "INTERACTIVE";
+export type MemoryKind =
+  | "place"
+  | "project"
+  | "promise"
+  | "server_procedure"
+  | "note";
 export type ActionType =
   | "send_chat"
   | "send_command"
@@ -80,6 +86,7 @@ export interface BrainProfile {
   id: string;
   mode: BrainMode;
   endpoint?: string | undefined;
+  tokenSecretId?: string | undefined;
   model?: string | undefined;
   dailyCallLimit?: number | undefined;
 }
@@ -168,4 +175,29 @@ export interface CapturedScreenshot {
   actionId: string;
   dataUrl: string;
   capturedAt: string;
+}
+
+export interface MemoryRecord {
+  id: string;
+  kind: MemoryKind;
+  title: string;
+  content: string;
+  serverProfileId?: string | undefined;
+  dimension?: string | undefined;
+  position?: {
+    x: number;
+    y: number;
+    z: number;
+  } | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemoryUpdateInput {
+  kind?: MemoryKind | undefined;
+  title?: string | undefined;
+  content?: string | undefined;
+  serverProfileId?: string | undefined;
+  dimension?: string | undefined;
+  position?: MemoryRecord["position"];
 }

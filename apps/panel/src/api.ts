@@ -63,6 +63,7 @@ export const api = {
   createBrainProfile: (input: {
     mode: "BUILT_IN" | "EXTERNAL";
     endpoint?: string | undefined;
+    tokenSecretId?: string | undefined;
     model?: string | undefined;
     dailyCallLimit?: number | undefined;
   }) =>
@@ -124,6 +125,45 @@ export const api = {
     request<{ actionId: string; status: string }>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ secretId }),
+    }),
+  createMemory: (input: {
+    kind: "place" | "project" | "promise" | "server_procedure" | "note";
+    title: string;
+    content: string;
+    serverProfileId?: string | undefined;
+    dimension?: string | undefined;
+    position?: {
+      x: number;
+      y: number;
+      z: number;
+    } | undefined;
+  }) =>
+    request<Status["memories"][number]>("/api/memory", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateMemory: (
+    id: string,
+    input: Partial<{
+      kind: "place" | "project" | "promise" | "server_procedure" | "note";
+      title: string;
+      content: string;
+      serverProfileId?: string | undefined;
+      dimension?: string | undefined;
+      position?: {
+        x: number;
+        y: number;
+        z: number;
+      } | undefined;
+    }>,
+  ) =>
+    request<Status["memories"][number]>(`/api/memory/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deleteMemory: (id: string) =>
+    request<{ status: string; memoryId: string }>(`/api/memory/${id}`, {
+      method: "DELETE",
     }),
   startOnboarding: (displayName: string) =>
     request<Status["onboarding"]>("/api/onboarding/start", {

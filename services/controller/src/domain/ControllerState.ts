@@ -10,6 +10,8 @@ import {
   type ConnectorKind,
   type ConnectorRecord,
   type ControllerSettings,
+  type MemoryRecord,
+  type MemoryUpdateInput,
   type OnboardingState,
   type OwnerProfile,
   type PairingGrant,
@@ -44,6 +46,7 @@ export class ControllerState {
   private changeListener: (() => void) | null = null;
   private readonly tasks = new Map<string, AgentTask>();
   private readonly actions = new Map<string, ActionRecord>();
+  private readonly memories = new Map<string, MemoryRecord>();
   private controlOwner: ControlOwner = "NONE";
   private activeClientProfileId: string | null = null;
   private activeServerProfileId: string | null = null;
@@ -517,6 +520,53 @@ export class ControllerState {
       .map((action) => structuredClone(action));
   }
 
+  createMemory(input: Omit<MemoryRecord, "id" | "createdAt" | "updatedAt">): MemoryRecord {
+    const now = new Date().toISOString();
+    const record: MemoryRecord = {
+      id: randomUUID(),
+      ...structuredClone(input),
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.memories.set(record.id, record);
+    this.notifyChange();
+    return structuredClone(record);
+  }
+
+  listMemories(): MemoryRecord[] {
+    return [...this.memories.values()]
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+      .map((record) => structuredClone(record));
+  }
+
+  updateMemory(
+    id: string,
+    input: MemoryUpdateInput,
+  ): MemoryRecord {
+    const record = this.memories.get(id);
+    if (!record) {
+      throw new Error("Memory record not found");
+    }
+
+    if (input.kind !== undefined) record.kind = input.kind;
+    if (input.title !== undefined) record.title = input.title;
+    if (input.content !== undefined) record.content = input.content;
+    if (input.serverProfileId !== undefined) record.serverProfileId = input.serverProfileId;
+    if (input.dimension !== undefined) record.dimension = input.dimension;
+    if (input.position !== undefined) record.position = structuredClone(input.position);
+    record.updatedAt = new Date().toISOString();
+
+    this.notifyChange();
+    return structuredClone(record);
+  }
+
+  deleteMemory(id: string): void {
+    if (!this.memories.delete(id)) {
+      throw new Error("Memory record not found");
+    }
+    this.notifyChange();
+  }
+
   runTask(taskId: string): AgentTask {
     const task = this.tasks.get(taskId);
     if (!task) {
@@ -568,6 +618,34 @@ export class ControllerState {
     return structuredClone(task);
   }
 
+  runTaskWithPlan(taskId: string, plan: {
+    actionType: ActionRecord["actionType"];
+    parameters: ActionRecord["parameters"];
+    reasoning?: string | undefined;
+  }): AgentTask {
+    const task = this.tasks.get(taskId);
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    if (task.status !== "QUEUED" && task.status !== "BLOCKED") {
+      throw new Error("Task is not runnable");
+    }
+
+    const action = this.requestAction({
+      actionType: plan.actionType,
+      parameters: plan.parameters,
+      controlEpoch: this.controlEpoch,
+      taskId: task.id,
+    });
+
+    task.status = "RUNNING";
+    task.result = plan.reasoning ?? `Action ${action.id} requested`;
+    task.updatedAt = new Date().toISOString();
+    this.notifyChange();
+    return structuredClone(task);
+  }
+
   setControlOwner(owner: ControlOwner): { owner: ControlOwner; controlEpoch: number } {
     this.controlOwner = owner;
     this.controlEpoch += 1;
@@ -591,6 +669,7 @@ export class ControllerState {
     controlOwner: ControlOwner;
     tasks: AgentTask[];
     actions: ActionRecord[];
+    memories: MemoryRecord[];
     screenshot: CapturedScreenshot | null;
     connectors: Array<Omit<ConnectorRecord, "tokenHash">>;
     snapshot: Snapshot | null;
@@ -604,6 +683,7 @@ export class ControllerState {
       controlOwner: this.controlOwner,
       tasks: this.listTasks(),
       actions: this.listActions(),
+      memories: this.listMemories(),
       screenshot: this.latestScreenshot ? structuredClone(this.latestScreenshot) : null,
       connectors: this.listConnectors(),
       snapshot: this.latestSnapshot ? structuredClone(this.latestSnapshot) : null,
@@ -629,6 +709,7 @@ export class ControllerState {
       controlEpoch: this.controlEpoch,
       tasks: this.listTasks(),
       actions: this.listActions(),
+      memories: this.listMemories(),
     };
   }
 
@@ -687,6 +768,11 @@ export class ControllerState {
     this.actions.clear();
     for (const action of snapshot.actions) {
       this.actions.set(action.id, structuredClone(action));
+    }
+
+    this.memories.clear();
+    for (const memory of snapshot.memories) {
+      this.memories.set(memory.id, structuredClone(memory));
     }
   }
 }

@@ -3,6 +3,7 @@ import websocket from "@fastify/websocket";
 import type { WebSocket } from "ws";
 import { z } from "zod";
 import { ControllerState } from "../domain/ControllerState.js";
+import { ExternalBrainClient } from "../brain/ExternalBrainClient.js";
 import type { ControllerStateStore } from "../persistence/sqlite.js";
 import { SecretStore } from "../security/SecretStore.js";
 import { connectorMessageSchema } from "../connector/messages.js";
@@ -14,9 +15,11 @@ import {
   createPairingSchema,
   createSecretSchema,
   createTaskSchema,
+  createMemorySchema,
   requestActionSchema,
   serverProfileSchema,
   serverLoginSchema,
+  updateMemorySchema,
   setTopologySchema,
   setControlOwnerSchema,
   startOnboardingSchema,
@@ -108,6 +111,27 @@ export async function buildServer(options: BuildServerOptions = {}) {
   app.get("/api/secrets", async () => ({
     secrets: secretStore?.list() ?? [],
   }));
+
+  app.get("/api/memory", async () => ({
+    memories: state.listMemories(),
+  }));
+
+  app.post("/api/memory", async (request) => {
+    const input = createMemorySchema.parse(request.body);
+    return state.createMemory(input);
+  });
+
+  app.patch("/api/memory/:id", async (request) => {
+    const params = z.object({ id: z.string().uuid() }).parse(request.params);
+    const input = updateMemorySchema.parse(request.body);
+    return state.updateMemory(params.id, input);
+  });
+
+  app.delete("/api/memory/:id", async (request) => {
+    const params = z.object({ id: z.string().uuid() }).parse(request.params);
+    state.deleteMemory(params.id);
+    return { status: "deleted", memoryId: params.id };
+  });
 
   app.post("/api/secrets", async (request, reply) => {
     if (!secretStore) {
@@ -240,6 +264,37 @@ export async function buildServer(options: BuildServerOptions = {}) {
     };
   }
 
+  function dispatchTaskAction(taskId: string): void {
+    const actions = state.listActions().filter((action) => action.taskId === taskId);
+    const action = actions.at(-1);
+    if (!action) {
+      return;
+    }
+
+    const socket = connectorSockets.get(action.connectorId);
+    if (!socket) {
+      state.completeAction({
+        actionId: action.id,
+        status: "FAILED",
+        result: "Client connector is not connected",
+      });
+      return;
+    }
+
+    const wireAction =
+      action.actionType === "server_login" && secretStore
+        ? buildServerLoginAction(state, secretStore, action)
+        : {
+            type: "action.request",
+            actionId: action.id,
+            actionType: action.actionType,
+            parameters: action.parameters,
+            controlEpoch: action.controlEpoch,
+          };
+
+    socket.send(JSON.stringify(wireAction));
+  }
+
   app.post("/api/tasks", async (request) => {
     const input = createTaskSchema.parse(request.body);
     return state.submitTask(input);
@@ -250,9 +305,99 @@ export async function buildServer(options: BuildServerOptions = {}) {
     return state.cancelTask(params.id);
   });
 
-  app.post("/api/tasks/:id/run", async (request) => {
+  app.post("/api/tasks/:id/run", async (request, reply) => {
     const params = z.object({ id: z.string().uuid() }).parse(request.params);
-    return state.runTask(params.id);
+    const status = state.describe();
+    const brain = status.profiles.brainProfiles.find(
+      (profile) => profile.id === status.profiles.active.brainProfileId,
+    );
+
+    if (brain?.mode !== "EXTERNAL") {
+      const task = state.runTask(params.id);
+      dispatchTaskAction(params.id);
+      return task;
+    }
+
+    if (!brain.endpoint) {
+      return reply.status(409).send({
+        error: {
+          code: "EXTERNAL_BRAIN_ENDPOINT_MISSING",
+          message: "Active external brain has no endpoint",
+        },
+      });
+    }
+
+    let token: string | undefined;
+    if (brain.tokenSecretId) {
+      if (!secretStore) {
+        return reply.status(503).send({
+          error: {
+            code: "SECRET_STORE_UNAVAILABLE",
+            message: "Secret store is not configured",
+          },
+        });
+      }
+
+      token = secretStore.get(brain.tokenSecretId) ?? undefined;
+      if (!token) {
+        return reply.status(409).send({
+          error: {
+            code: "BRAIN_TOKEN_SECRET_NOT_FOUND",
+            message: "External brain token secret not found",
+          },
+        });
+      }
+    }
+
+    const task = status.tasks.find((item) => item.id === params.id);
+    if (!task) {
+      return reply.status(404).send({
+        error: {
+          code: "TASK_NOT_FOUND",
+          message: "Task not found",
+        },
+      });
+    }
+
+    try {
+      const client = new ExternalBrainClient(brain.endpoint, token);
+      const decision = await client.decide({
+        task: {
+          id: task.id,
+          title: task.title,
+          goal: task.goal,
+          priority: task.priority,
+          author: task.author,
+        },
+        snapshot: status.snapshot,
+        brain: {
+          id: brain.id,
+          endpoint: brain.endpoint,
+          model: brain.model,
+        },
+      });
+      const runningTask = state.runTaskWithPlan(task.id, decision);
+      dispatchTaskAction(task.id);
+      return runningTask;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(502).send({
+          error: {
+            code: "INVALID_EXTERNAL_BRAIN_DECISION",
+            message: "External brain returned an invalid decision",
+            details: error.issues,
+          },
+        });
+      }
+
+      app.log.error(error);
+      return reply.status(502).send({
+        error: {
+          code: "EXTERNAL_BRAIN_FAILED",
+          message: "External brain request failed",
+        },
+      });
+    }
   });
 
   app.post("/api/control", async (request) => {

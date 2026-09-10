@@ -8,10 +8,11 @@ import {
   UserRound,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Profiles } from "./types";
+import type { Profiles, SecretMetadata } from "./types";
 
 interface ProfilesPanelProps {
   profiles: Profiles | null;
+  secrets: SecretMetadata[];
   onCreateClient: (input: {
     name: string;
     minecraftVersion: string;
@@ -37,6 +38,7 @@ interface ProfilesPanelProps {
   onCreateBrain: (input: {
     mode: "BUILT_IN" | "EXTERNAL";
     endpoint?: string | undefined;
+    tokenSecretId?: string | undefined;
     model?: string | undefined;
     dailyCallLimit?: number | undefined;
   }) => Promise<void>;
@@ -55,6 +57,7 @@ interface ServerForm {
 
 export function ProfilesPanel({
   profiles,
+  secrets,
   onCreateClient,
   onCreateAuth,
   onCreateServer,
@@ -86,6 +89,7 @@ export function ProfilesPanel({
   const [brainForm, setBrainForm] = useState({
     mode: "BUILT_IN" as "BUILT_IN" | "EXTERNAL",
     endpoint: "",
+    tokenSecretId: "",
     model: "gpt-5-mini",
     dailyCallLimit: "500",
   });
@@ -125,6 +129,10 @@ export function ProfilesPanel({
     void onCreateBrain({
       mode: brainForm.mode,
       endpoint: brainForm.mode === "EXTERNAL" ? brainForm.endpoint : undefined,
+      tokenSecretId:
+        brainForm.mode === "EXTERNAL" && brainForm.tokenSecretId
+          ? brainForm.tokenSecretId
+          : undefined,
       model: brainForm.mode === "BUILT_IN" ? brainForm.model : undefined,
       dailyCallLimit: Number.isFinite(dailyCallLimit) ? dailyCallLimit : undefined,
     });
@@ -367,6 +375,24 @@ export function ProfilesPanel({
               placeholder="https://agent.example.com"
               value={brainForm.endpoint}
             />
+          </Field>
+          <Field label="Token secret">
+            <select
+              disabled={brainForm.mode !== "EXTERNAL"}
+              onChange={(event) =>
+                setBrainForm({ ...brainForm, tokenSecretId: event.target.value })
+              }
+              value={brainForm.tokenSecretId}
+            >
+              <option value="">none</option>
+              {secrets
+                .filter((secret) => secret.kind === "api_key")
+                .map((secret) => (
+                  <option key={secret.id} value={secret.id}>
+                    {secret.name}
+                  </option>
+                ))}
+            </select>
           </Field>
           <Field label="Daily limit">
             <input

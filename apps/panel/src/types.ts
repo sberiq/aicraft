@@ -5,6 +5,12 @@ export type OnboardingStatus = "not_started" | "in_progress" | "completed";
 export type ControlOwner = "NONE" | "AGENT" | "HUMAN";
 export type TaskStatus = "QUEUED" | "RUNNING" | "BLOCKED" | "SUCCEEDED" | "FAILED" | "CANCELLED";
 export type SecretKind = "auth_password" | "api_key";
+export type MemoryKind =
+  | "place"
+  | "project"
+  | "promise"
+  | "server_procedure"
+  | "note";
 export type RenderMode = "ECONOMY" | "OBSERVE" | "INTERACTIVE";
 export type ActionType =
   | "send_chat"
@@ -80,6 +86,7 @@ export interface BrainProfile {
   id: string;
   mode: "BUILT_IN" | "EXTERNAL";
   endpoint?: string;
+  tokenSecretId?: string;
   model?: string;
   dailyCallLimit?: number;
 }
@@ -154,6 +161,22 @@ export interface SecretMetadata {
   updatedAt: string;
 }
 
+export interface MemoryRecord {
+  id: string;
+  kind: MemoryKind;
+  title: string;
+  content: string;
+  serverProfileId?: string;
+  dimension?: string;
+  position?: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Status {
   onboarding: Onboarding;
   settings: Settings;
@@ -162,6 +185,7 @@ export interface Status {
   tasks: AgentTask[];
   actions: ActionRecord[];
   secrets: SecretMetadata[];
+  memories: MemoryRecord[];
   screenshot: CapturedScreenshot | null;
   controlEpoch: number;
   activeConnectorId: string | null;

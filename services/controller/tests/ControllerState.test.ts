@@ -370,4 +370,25 @@ describe("ControllerState", () => {
     const actions = state.listActions();
     expect(actions.map((action) => action.actionType)).toEqual(goals.map((goal) => goal.actionType));
   });
+
+  it("creates, updates, and deletes memory records", () => {
+    const state = new ControllerState();
+    const memory = state.createMemory({
+      kind: "place",
+      title: "Home",
+      content: "Base near the spawn plateau",
+      dimension: "minecraft:overworld",
+      position: { x: 10, y: 64, z: -20 },
+    });
+    const updated = state.updateMemory(memory.id, {
+      title: "Main base",
+      content: "Oak base with storage and furnace",
+    });
+
+    expect(updated.title).toBe("Main base");
+    expect(updated.position?.x).toBe(10);
+    expect(state.listMemories()).toHaveLength(1);
+    state.deleteMemory(memory.id);
+    expect(state.listMemories()).toHaveLength(0);
+  });
 });

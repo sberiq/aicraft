@@ -24,12 +24,14 @@
   - client, server, identity, and brain profiles;
   - active profile switching;
   - task queue and cancellation;
+  - external brain HTTP adapter with validated decisions;
   - deterministic built-in planner for chat, command, movement, render-mode, screenshot, look, hotbar, attack, item use, inventory, and drop tasks;
   - `AGENT` / `HUMAN` control arbitration;
   - safe client actions for chat, commands, movement, render modes, and screenshots with `controlEpoch` checks;
   - SQLite persistence.
   - AES-256-GCM secret storage;
-  - server login actions that never persist plaintext passwords.
+  - server login actions that never persist plaintext passwords;
+  - persistent memory records for places, projects, promises, server procedures, and notes.
 - Dashboard provides:
   - overview and live status polling;
   - Deployment topology switch;
@@ -39,10 +41,11 @@
   - Client actions screen for chat, commands, movement, render modes, and screenshots.
   - Live screenshot display.
   - Secrets screen with metadata-only secret list and server login.
+  - Memory screen for viewing, creating, editing, and deleting records.
 
 ## Verification
 
-- Node tests: 62 passed.
+- Node tests: 67 passed.
 - TypeScript typecheck: passed.
 - Controller production build: passed.
 - Panel production build: passed.
@@ -53,8 +56,8 @@
 
 ## Next implementation milestone
 
-1. Add real Minecraft server connection smoke test.
-2. Add inventory, mining, crafting, and navigation skills.
-3. Add external brain adapter and memory model.
-4. Add real Minecraft server connection smoke test.
-5. Add long-run performance and deployment validation.
+1. Add inventory transfer, mining, crafting, and navigation skills.
+2. Add real Minecraft server connection smoke test.
+3. Add long-run performance and deployment validation.
+4. Add production deployment hardening and backup verification.
+5. Add autonomous task scheduling and self-directed projects.

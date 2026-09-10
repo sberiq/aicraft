@@ -40,6 +40,7 @@ export const authProfileSchema = z.object({
 export const brainProfileSchema = z.object({
   mode: z.enum(["BUILT_IN", "EXTERNAL"]),
   endpoint: z.string().url().optional(),
+  tokenSecretId: z.string().uuid().optional(),
   model: z.string().min(1).max(100).optional(),
   dailyCallLimit: z.number().int().min(0).max(1_000_000).optional(),
 });
@@ -164,3 +165,20 @@ export const createSecretSchema = z.object({
 export const serverLoginSchema = z.object({
   secretId: z.string().uuid(),
 });
+
+export const createMemorySchema = z.object({
+  kind: z.enum(["place", "project", "promise", "server_procedure", "note"]),
+  title: z.string().min(1).max(200),
+  content: z.string().min(1).max(10000),
+  serverProfileId: z.string().uuid().optional(),
+  dimension: z.string().min(1).max(100).optional(),
+  position: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      z: z.number(),
+    })
+    .optional(),
+});
+
+export const updateMemorySchema = createMemorySchema.partial();

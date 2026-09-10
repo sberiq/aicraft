@@ -40,6 +40,13 @@ All HTTP responses use JSON. Runtime errors use:
 - `DELETE /api/secrets/:id` - delete a secret.
 - `POST /api/auth/login` - send a known server-login command to the paired client using a stored secret.
 
+### Memory
+
+- `GET /api/memory` - list memory records.
+- `POST /api/memory` - create a place, project, promise, server procedure, or note.
+- `PATCH /api/memory/:id` - update a memory record.
+- `DELETE /api/memory/:id` - delete a memory record.
+
 ### Profiles
 
 - `GET /api/profiles` - active profile IDs and profile catalogs.
@@ -53,7 +60,7 @@ All HTTP responses use JSON. Runtime errors use:
 
 - `GET /api/tasks` - list tasks in priority order.
 - `POST /api/tasks` - create a task.
-- `POST /api/tasks/:id/run` - run a task with the active brain.
+- `POST /api/tasks/:id/run` - run a task with the active brain. `BUILT_IN` uses the deterministic planner; `EXTERNAL` requests a validated decision from the configured HTTP endpoint.
 - `POST /api/tasks/:id/cancel` - cancel a task.
 - `POST /api/control` - set control owner to `NONE`, `AGENT`, or `HUMAN`.
 - `GET /api/actions` - list client actions.
