@@ -443,6 +443,7 @@ export class ControllerState {
     actionType: ActionRecord["actionType"];
     parameters: { text: string };
     controlEpoch: number;
+    taskId?: string | undefined;
   }): ActionRecord {
     if (!this.activeConnectorId) {
       throw new Error("No active client connector");
@@ -458,6 +459,7 @@ export class ControllerState {
 
     const action: ActionRecord = {
       id: randomUUID(),
+      taskId: input.taskId,
       connectorId: this.activeConnectorId,
       actionType: input.actionType,
       parameters: structuredClone(input.parameters),
@@ -484,6 +486,16 @@ export class ControllerState {
     action.status = input.status;
     action.result = input.result;
     action.completedAt = new Date().toISOString();
+
+    if (action.taskId) {
+      const task = this.tasks.get(action.taskId);
+      if (task && task.status !== "CANCELLED") {
+        task.status = input.status === "SUCCEEDED" ? "SUCCEEDED" : input.status === "UNKNOWN" ? "BLOCKED" : "FAILED";
+        task.result = input.result;
+        task.updatedAt = action.completedAt;
+      }
+    }
+
     this.notifyChange();
     return structuredClone(action);
   }
@@ -492,6 +504,46 @@ export class ControllerState {
     return [...this.actions.values()]
       .sort((left, right) => left.requestedAt.localeCompare(right.requestedAt))
       .map((action) => structuredClone(action));
+  }
+
+  runTask(taskId: string): AgentTask {
+    const task = this.tasks.get(taskId);
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    if (task.status !== "QUEUED" && task.status !== "BLOCKED") {
+      throw new Error("Task is not runnable");
+    }
+
+    const brain = this.activeBrainProfileId
+      ? this.brainProfiles.get(this.activeBrainProfileId)
+      : undefined;
+    if (!brain || brain.mode !== "BUILT_IN") {
+      throw new Error("Built-in brain is not active");
+    }
+
+    const plan = planBuiltInTask(task.goal);
+    if (!plan) {
+      task.status = "BLOCKED";
+      task.result = "No supported built-in skill for this goal";
+      task.updatedAt = new Date().toISOString();
+      this.notifyChange();
+      return structuredClone(task);
+    }
+
+    const action = this.requestAction({
+      actionType: plan.actionType,
+      parameters: { text: plan.text },
+      controlEpoch: this.controlEpoch,
+      taskId: task.id,
+    });
+
+    task.status = "RUNNING";
+    task.result = `Action ${action.id} requested`;
+    task.updatedAt = new Date().toISOString();
+    this.notifyChange();
+    return structuredClone(task);
   }
 
   setControlOwner(owner: ControlOwner): { owner: ControlOwner; controlEpoch: number } {
@@ -617,4 +669,23 @@ export class ControllerState {
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
+}
+
+function planBuiltInTask(goal: string):
+  | {
+      actionType: "send_chat" | "send_command";
+      text: string;
+    }
+  | null {
+  const chatMatch = /^send chat:\s*(.+)$/i.exec(goal);
+  if (chatMatch?.[1]) {
+    return { actionType: "send_chat", text: chatMatch[1] };
+  }
+
+  const commandMatch = /^send command:\s*(.+)$/i.exec(goal);
+  if (commandMatch?.[1]) {
+    return { actionType: "send_command", text: commandMatch[1] };
+  }
+
+  return null;
 }

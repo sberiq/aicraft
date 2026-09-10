@@ -130,6 +130,12 @@ export function App() {
     });
   };
 
+  const runTask = async (id: string) => {
+    await run(`run-task-${id}`, async () => {
+      await api.runTask(id);
+    });
+  };
+
   const setControlOwner = async (owner: Status["controlOwner"]) => {
     await run("set-control-owner", async () => {
       await api.setControlOwner(owner);
@@ -412,6 +418,7 @@ export function App() {
             onRequestAction={requestAction}
             tasks={status?.tasks ?? []}
             onCancelTask={cancelTask}
+            onRunTask={runTask}
             onSetControlOwner={setControlOwner}
             onSubmitTask={createTask}
           />

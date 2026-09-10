@@ -92,6 +92,7 @@ export const serializedControllerStateSchema = z.object({
   actions: z.array(
     z.object({
       id: z.string().uuid(),
+      taskId: z.string().uuid().optional(),
       connectorId: z.string().uuid(),
       actionType: z.enum(["send_chat", "send_command"]),
       parameters: z.object({

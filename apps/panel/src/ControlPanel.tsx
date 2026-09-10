@@ -14,6 +14,7 @@ interface ControlPanelProps {
     author: string;
   }) => Promise<void>;
   onCancelTask: (id: string) => Promise<void>;
+  onRunTask: (id: string) => Promise<void>;
   onSetControlOwner: (owner: ControlOwner) => Promise<void>;
   onRequestAction: (input: {
     actionType: "send_chat" | "send_command";
@@ -29,6 +30,7 @@ export function ControlPanel({
   actions,
   onSubmitTask,
   onCancelTask,
+  onRunTask,
   onSetControlOwner,
   onRequestAction,
 }: ControlPanelProps) {
@@ -226,14 +228,24 @@ export function ControlPanel({
                   </td>
                   <td>{task.author}</td>
                   <td>
-                    <button
-                      disabled={task.status === "SUCCEEDED" || task.status === "CANCELLED"}
-                      onClick={() => void onCancelTask(task.id)}
-                      type="button"
-                    >
-                      <Ban size={17} />
-                      Cancel
-                    </button>
+                    <div className="toolbar compact">
+                      <button
+                        disabled={task.status !== "QUEUED" && task.status !== "BLOCKED"}
+                        onClick={() => void onRunTask(task.id)}
+                        type="button"
+                      >
+                        <Play size={17} />
+                        Run
+                      </button>
+                      <button
+                        disabled={task.status === "SUCCEEDED" || task.status === "CANCELLED"}
+                        onClick={() => void onCancelTask(task.id)}
+                        type="button"
+                      >
+                        <Ban size={17} />
+                        Cancel
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

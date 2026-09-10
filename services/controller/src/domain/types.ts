@@ -122,6 +122,7 @@ export interface AgentTask {
 
 export interface ActionRecord {
   id: string;
+  taskId?: string | undefined;
   connectorId: string;
   actionType: ActionType;
   parameters: {

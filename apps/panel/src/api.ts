@@ -88,6 +88,10 @@ export const api = {
     request<Status["tasks"][number]>(`/api/tasks/${id}/cancel`, {
       method: "POST",
     }),
+  runTask: (id: string) =>
+    request<Status["tasks"][number]>(`/api/tasks/${id}/run`, {
+      method: "POST",
+    }),
   setControlOwner: (owner: Status["controlOwner"]) =>
     request<{ owner: Status["controlOwner"]; controlEpoch: number }>("/api/control", {
       method: "POST",

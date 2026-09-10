@@ -97,6 +97,7 @@ export interface AgentTask {
 
 export interface ActionRecord {
   id: string;
+  taskId?: string;
   connectorId: string;
   actionType: ActionType;
   parameters: {

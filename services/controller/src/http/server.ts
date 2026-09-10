@@ -125,6 +125,11 @@ export async function buildServer(options: BuildServerOptions = {}) {
     return state.cancelTask(params.id);
   });
 
+  app.post("/api/tasks/:id/run", async (request) => {
+    const params = z.object({ id: z.string().uuid() }).parse(request.params);
+    return state.runTask(params.id);
+  });
+
   app.post("/api/control", async (request) => {
     const input = setControlOwnerSchema.parse(request.body);
     return state.setControlOwner(input.owner);

@@ -46,6 +46,7 @@ All HTTP responses use JSON. Runtime errors use:
 
 - `GET /api/tasks` - list tasks in priority order.
 - `POST /api/tasks` - create a task.
+- `POST /api/tasks/:id/run` - run a task with the active brain.
 - `POST /api/tasks/:id/cancel` - cancel a task.
 - `POST /api/control` - set control owner to `NONE`, `AGENT`, or `HUMAN`.
 - `GET /api/actions` - list client actions.

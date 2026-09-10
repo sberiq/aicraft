@@ -19,6 +19,7 @@
   - client, server, identity, and brain profiles;
   - active profile switching;
   - task queue and cancellation;
+  - deterministic built-in planner for `send chat` and `send command` tasks;
   - `AGENT` / `HUMAN` control arbitration;
   - safe client actions `send_chat` and `send_command` with `controlEpoch` checks;
   - SQLite persistence.
@@ -32,7 +33,7 @@
 
 ## Verification
 
-- Node tests: 42 passed.
+- Node tests: 46 passed.
 - TypeScript typecheck: passed.
 - Controller production build: passed.
 - Panel production build: passed.

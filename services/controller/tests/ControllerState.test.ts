@@ -183,4 +183,50 @@ describe("ControllerState", () => {
       controlEpoch: 1,
     })).toThrow();
   });
+
+  it("runs a supported built-in task and closes it from the action result", () => {
+    const state = new ControllerState();
+    const grant = state.createPairingGrant("client_mod");
+    state.pairConnector({
+      pairingCode: grant.code,
+      kind: "client_mod",
+      name: "Brain client",
+      protocolVersion: 1,
+    });
+    state.setControlOwner("AGENT");
+    const task = state.submitTask({
+      title: "Say hello",
+      goal: "send chat: Hello from aicraft",
+      priority: 10,
+      author: "owner",
+    });
+    const running = state.runTask(task.id);
+    const action = state.listActions()[0];
+    expect(running.status).toBe("RUNNING");
+    expect(action?.taskId).toBe(task.id);
+    expect(action?.parameters.text).toBe("Hello from aicraft");
+
+    state.completeAction({
+      actionId: action?.id ?? "",
+      status: "SUCCEEDED",
+      result: "sent",
+    });
+    const completed = state.listTasks()[0];
+    expect(completed?.status).toBe("SUCCEEDED");
+    expect(completed?.result).toBe("sent");
+  });
+
+  it("blocks a built-in task with an unsupported goal", () => {
+    const state = new ControllerState();
+    const task = state.submitTask({
+      title: "Unsupported",
+      goal: "mine diamonds",
+      priority: 1,
+      author: "owner",
+    });
+    const blocked = state.runTask(task.id);
+
+    expect(blocked.status).toBe("BLOCKED");
+    expect(blocked.result).toContain("No supported built-in skill");
+  });
 });

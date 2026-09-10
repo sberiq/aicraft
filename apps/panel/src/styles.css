@@ -222,6 +222,10 @@ button:disabled {
   margin-bottom: 14px;
 }
 
+.toolbar.compact {
+  margin: 0;
+}
+
 .pairing-box {
   display: flex;
   align-items: center;
