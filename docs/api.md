@@ -66,7 +66,7 @@ All HTTP responses use JSON. Runtime errors use:
 - `GET /api/actions` - list client actions.
 - `POST /api/actions` - request a safe client action with the current `controlEpoch`.
 
-Supported client actions are `send_chat`, `send_command`, `set_movement`, `set_render_mode`, `capture_screenshot`, `look`, `select_hotbar`, `attack`, `use_item`, `open_inventory`, `close_screen`, and `drop_item`. Chat and commands use the real client network handler; movement, hotbar, attack, use, and drop use normal key bindings; render modes use Minecraft graphics options; and screenshots are captured from the client framebuffer.
+Supported client actions are `send_chat`, `send_command`, `set_movement`, `set_render_mode`, `capture_screenshot`, `look`, `select_hotbar`, `attack`, `use_item`, `open_inventory`, `close_screen`, `drop_item`, `navigate_to`, and `cancel_navigation`. Chat and commands use the real client network handler; movement, hotbar, attack, use, drop, and navigation use normal key bindings; render modes use Minecraft graphics options; and screenshots are captured from the client framebuffer.
 
 ## Connector WebSocket
 

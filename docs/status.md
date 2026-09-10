@@ -15,6 +15,7 @@
   - framebuffer screenshot capture as base64 PNG.
   - view direction control;
   - hotbar selection, attack, item use, inventory open/close, and item drop through normal client inputs.
+  - client-side navigation toward X/Z through normal movement keys, yaw, tolerance, and timeout.
 - Optional Paper server integration plugin builds successfully.
 - Controller service provides:
   - health and status APIs;
@@ -25,8 +26,9 @@
   - active profile switching;
   - task queue and cancellation;
   - external brain HTTP adapter with validated decisions;
-  - deterministic built-in planner for chat, command, movement, render-mode, screenshot, look, hotbar, attack, item use, inventory, and drop tasks;
+  - deterministic built-in planner for chat, command, movement, render-mode, screenshot, look, hotbar, attack, item use, inventory, drop, navigation, and navigation-cancel tasks;
   - `AGENT` / `HUMAN` control arbitration;
+  - automatic movement-key and navigation release on manual takeover;
   - safe client actions for chat, commands, movement, render modes, and screenshots with `controlEpoch` checks;
   - SQLite persistence.
   - AES-256-GCM secret storage;
@@ -45,7 +47,7 @@
 
 ## Verification
 
-- Node tests: 67 passed.
+- Node tests: 71 passed.
 - TypeScript typecheck: passed.
 - Controller production build: passed.
 - Panel production build: passed.
@@ -56,7 +58,7 @@
 
 ## Next implementation milestone
 
-1. Add inventory transfer, mining, crafting, and navigation skills.
+1. Add inventory transfer, mining, and crafting skills.
 2. Add real Minecraft server connection smoke test.
 3. Add long-run performance and deployment validation.
 4. Add production deployment hardening and backup verification.

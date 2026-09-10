@@ -371,6 +371,40 @@ describe("ControllerState", () => {
     expect(actions.map((action) => action.actionType)).toEqual(goals.map((goal) => goal.actionType));
   });
 
+  it("plans navigation and navigation cancellation tasks", () => {
+    const state = new ControllerState();
+    const grant = state.createPairingGrant("client_mod");
+    state.pairConnector({
+      pairingCode: grant.code,
+      kind: "client_mod",
+      name: "Navigation client",
+      protocolVersion: 1,
+    });
+    state.setControlOwner("AGENT");
+    const navigationTask = state.submitTask({
+      title: "Go to oak forest",
+      goal: "navigate to: 12.5 -20.25 2 60000",
+      priority: 1,
+      author: "owner",
+    });
+    state.runTask(navigationTask.id);
+    const cancelTask = state.submitTask({
+      title: "Stop navigation",
+      goal: "cancel navigation",
+      priority: 2,
+      author: "owner",
+    });
+    state.runTask(cancelTask.id);
+
+    const actions = state.listActions();
+    expect(actions[0]?.actionType).toBe("navigate_to");
+    expect(actions[0]?.parameters.x).toBe(12.5);
+    expect(actions[0]?.parameters.z).toBe(-20.25);
+    expect(actions[0]?.parameters.tolerance).toBe(2);
+    expect(actions[0]?.parameters.timeoutMs).toBe(60_000);
+    expect(actions[1]?.actionType).toBe("cancel_navigation");
+  });
+
   it("creates, updates, and deletes memory records", () => {
     const state = new ControllerState();
     const memory = state.createMemory({

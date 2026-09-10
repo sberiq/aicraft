@@ -19,7 +19,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public final class AicraftActionExecutor {
+    private final AicraftNavigationController navigationController = new AicraftNavigationController();
+
     public JsonObject execute(JsonObject request) {
+        String actionType = request.get("actionType").getAsString();
+        if ("navigate_to".equals(actionType)) {
+            return executeNavigation(request);
+        }
+        if ("cancel_navigation".equals(actionType)) {
+            return executeCancelNavigation(request);
+        }
+
         CompletableFuture<JsonObject> future = new CompletableFuture<>();
         MinecraftClient.getInstance().execute(() -> future.complete(executeOnClientThread(request)));
         return future.join();
@@ -61,6 +71,7 @@ public final class AicraftActionExecutor {
                 String text = parameters.get("text").getAsString();
                 networkHandler.sendChatCommand(text.startsWith("/") ? text.substring(1) : text);
             } else if ("set_movement".equals(actionType)) {
+                navigationController.cancel();
                 JsonObject movement = parameters.getAsJsonObject("movement");
                 GameOptions options = client.options;
                 options.forwardKey.setPressed(movement.get("forward").getAsBoolean());
@@ -121,6 +132,49 @@ public final class AicraftActionExecutor {
         }
 
         return response;
+    }
+
+    private JsonObject executeNavigation(JsonObject request) {
+        String actionId = request.get("actionId").getAsString();
+        JsonObject parameters = request.getAsJsonObject("parameters");
+        JsonObject response = new JsonObject();
+        response.addProperty("type", "action.result");
+        response.addProperty("actionId", actionId);
+
+        try {
+            double x = parameters.get("x").getAsDouble();
+            double z = parameters.get("z").getAsDouble();
+            double tolerance = parameters.has("tolerance") ? parameters.get("tolerance").getAsDouble() : 1.5;
+            long timeout = parameters.has("timeoutMs") ? parameters.get("timeoutMs").getAsLong() : 120_000L;
+            AicraftNavigationController.NavigationResult result = navigationController
+                    .start(x, z, tolerance, timeout)
+                    .join();
+
+            response.addProperty("status", result.success() ? "SUCCEEDED" : "FAILED");
+            response.addProperty("result", result.result());
+        } catch (Exception exception) {
+            AicraftClientMod.LOGGER.warn("Unable to navigate aicraft client", exception);
+            response.addProperty("status", "FAILED");
+            response.addProperty("result", "Navigation request failed");
+        }
+
+        return response;
+    }
+
+    private JsonObject executeCancelNavigation(JsonObject request) {
+        String actionId = request.get("actionId").getAsString();
+        navigationController.cancel();
+
+        JsonObject response = new JsonObject();
+        response.addProperty("type", "action.result");
+        response.addProperty("actionId", actionId);
+        response.addProperty("status", "SUCCEEDED");
+        response.addProperty("result", "Navigation cancelled and movement keys released");
+        return response;
+    }
+
+    public void releaseControl() {
+        navigationController.cancel();
     }
 
     private void tapKey(KeyBinding keyBinding) {

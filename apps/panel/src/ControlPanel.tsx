@@ -66,6 +66,10 @@ export function ControlPanel({
   const [lookYaw, setLookYaw] = useState("0");
   const [lookPitch, setLookPitch] = useState("0");
   const [hotbarSlot, setHotbarSlot] = useState("1");
+  const [navigateX, setNavigateX] = useState("0");
+  const [navigateZ, setNavigateZ] = useState("0");
+  const [navigateTolerance, setNavigateTolerance] = useState("1.5");
+  const [navigateTimeout, setNavigateTimeout] = useState("120000");
   const [renderMode, setRenderMode] = useState<RenderMode>("ECONOMY");
   const [movement, setMovement] = useState({
     forward: false,
@@ -155,6 +159,37 @@ export function ControlPanel({
       void onRequestAction({
         actionType: actionKind,
         parameters: { movement },
+        controlEpoch,
+      });
+      return;
+    }
+
+    if (actionKind === "navigate_to") {
+      const x = Number(navigateX);
+      const z = Number(navigateZ);
+      const tolerance = Number(navigateTolerance);
+      const timeoutMs = Number(navigateTimeout);
+      if (
+        !Number.isFinite(x) ||
+        !Number.isFinite(z) ||
+        !Number.isFinite(tolerance) ||
+        !Number.isInteger(timeoutMs)
+      ) {
+        return;
+      }
+
+      void onRequestAction({
+        actionType: "navigate_to",
+        parameters: { x, z, tolerance, timeoutMs },
+        controlEpoch,
+      });
+      return;
+    }
+
+    if (actionKind === "cancel_navigation") {
+      void onRequestAction({
+        actionType: "cancel_navigation",
+        parameters: {},
         controlEpoch,
       });
       return;
@@ -290,6 +325,8 @@ export function ControlPanel({
               <option value="open_inventory">open_inventory</option>
               <option value="close_screen">close_screen</option>
               <option value="drop_item">drop_item</option>
+              <option value="navigate_to">navigate_to</option>
+              <option value="cancel_navigation">cancel_navigation</option>
             </select>
           </label>
           {actionKind === "send_chat" || actionKind === "send_command" ? (
@@ -346,6 +383,42 @@ export function ControlPanel({
                 value={hotbarSlot}
               />
             </label>
+          ) : null}
+          {actionKind === "navigate_to" ? (
+            <>
+              <label>
+                <span>X</span>
+                <input
+                  onChange={(event) => setNavigateX(event.target.value)}
+                  type="number"
+                  value={navigateX}
+                />
+              </label>
+              <label>
+                <span>Z</span>
+                <input
+                  onChange={(event) => setNavigateZ(event.target.value)}
+                  type="number"
+                  value={navigateZ}
+                />
+              </label>
+              <label>
+                <span>Tolerance</span>
+                <input
+                  onChange={(event) => setNavigateTolerance(event.target.value)}
+                  type="number"
+                  value={navigateTolerance}
+                />
+              </label>
+              <label>
+                <span>Timeout</span>
+                <input
+                  onChange={(event) => setNavigateTimeout(event.target.value)}
+                  type="number"
+                  value={navigateTimeout}
+                />
+              </label>
+            </>
           ) : null}
           <button onClick={submitAction} type="button">
             <Send size={17} />
@@ -497,6 +570,10 @@ function describeAction(action: ActionRecord): string {
 
   if (action.parameters.slot !== undefined) {
     return `slot ${action.parameters.slot}`;
+  }
+
+  if (action.parameters.x !== undefined || action.parameters.z !== undefined) {
+    return `x ${action.parameters.x ?? 0}, z ${action.parameters.z ?? 0}`;
   }
 
   if (action.parameters.movement) {

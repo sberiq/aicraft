@@ -26,7 +26,9 @@ export type ActionType =
   | "use_item"
   | "open_inventory"
   | "close_screen"
-  | "drop_item";
+  | "drop_item"
+  | "navigate_to"
+  | "cancel_navigation";
 export type ActionStatus = "PENDING" | "SUCCEEDED" | "FAILED" | "UNKNOWN";
 
 export interface OwnerProfile {
@@ -163,6 +165,10 @@ export interface ActionRecord {
     yaw?: number | undefined;
     pitch?: number | undefined;
     slot?: number | undefined;
+    x?: number | undefined;
+    z?: number | undefined;
+    tolerance?: number | undefined;
+    timeoutMs?: number | undefined;
   };
   status: ActionStatus;
   controlEpoch: number;

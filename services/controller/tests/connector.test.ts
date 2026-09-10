@@ -60,6 +60,18 @@ describe("connector WebSocket", () => {
 
     expect(state.listActions()[0]?.status).toBe("SUCCEEDED");
 
+    const revokedMessage = waitForMessage(socket, "control.revoked");
+    const controlResponse = await app.inject({
+      method: "POST",
+      url: "/api/control",
+      payload: { owner: "HUMAN" },
+    });
+    const revoked = await revokedMessage;
+
+    expect(controlResponse.statusCode).toBe(200);
+    expect(revoked.owner).toBe("HUMAN");
+    expect(revoked.controlEpoch).toBe(controlResponse.json().controlEpoch);
+
     await new Promise<void>((resolve, reject) => {
       socket.once("error", reject);
       socket.once("close", () => resolve());

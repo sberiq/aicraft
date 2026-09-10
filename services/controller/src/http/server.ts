@@ -402,7 +402,19 @@ export async function buildServer(options: BuildServerOptions = {}) {
 
   app.post("/api/control", async (request) => {
     const input = setControlOwnerSchema.parse(request.body);
-    return state.setControlOwner(input.owner);
+    const result = state.setControlOwner(input.owner);
+    if (result.owner !== "AGENT") {
+      const status = state.describe();
+      const socket = status.activeConnectorId
+        ? connectorSockets.get(status.activeConnectorId)
+        : undefined;
+      socket?.send(JSON.stringify({
+        type: "control.revoked",
+        owner: result.owner,
+        controlEpoch: result.controlEpoch,
+      }));
+    }
+    return result;
   });
   app.get("/api/onboarding", async () => state.getOnboardingState());
 

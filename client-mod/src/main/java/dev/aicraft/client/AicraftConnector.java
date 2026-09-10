@@ -143,6 +143,9 @@ public final class AicraftConnector {
             AicraftClientMod.LOGGER.info("aicraft client authenticated");
         } else if ("action.request".equals(type)) {
             send(webSocket, GSON.toJson(actionExecutor.execute(message)));
+        } else if ("control.revoked".equals(type)) {
+            actionExecutor.releaseControl();
+            AicraftClientMod.LOGGER.info("aicraft client control revoked; movement keys released");
         }
     }
 

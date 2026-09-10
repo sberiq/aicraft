@@ -70,3 +70,7 @@ Additional action types:
 - `set_movement`: sets normal key-binding state for forward, back, left, right, jump, sneak, and sprint.
 - `set_render_mode`: applies `ECONOMY`, `OBSERVE`, or `INTERACTIVE` graphics profiles.
 - `capture_screenshot`: captures the framebuffer and returns base64 PNG data.
+- `navigate_to`: holds normal movement keys while walking toward X/Z, stops within tolerance, and times out safely.
+- `cancel_navigation`: releases navigation and movement keys.
+
+When control owner changes away from `AGENT`, the controller sends `control.revoked`. The client cancels active navigation and releases all movement keys.

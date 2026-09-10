@@ -154,6 +154,21 @@ export const requestActionSchema = z.discriminatedUnion("actionType", [
     parameters: z.object({}),
     controlEpoch: z.number().int().positive(),
   }),
+  z.object({
+    actionType: z.literal("navigate_to"),
+    parameters: z.object({
+      x: z.number().min(-30_000_000).max(30_000_000),
+      z: z.number().min(-30_000_000).max(30_000_000),
+      tolerance: z.number().min(0.5).max(64).default(1.5),
+      timeoutMs: z.number().int().min(1000).max(600_000).default(120_000),
+    }),
+    controlEpoch: z.number().int().positive(),
+  }),
+  z.object({
+    actionType: z.literal("cancel_navigation"),
+    parameters: z.object({}),
+    controlEpoch: z.number().int().positive(),
+  }),
 ]);
 
 export const createSecretSchema = z.object({

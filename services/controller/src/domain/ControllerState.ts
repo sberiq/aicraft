@@ -604,8 +604,15 @@ export class ControllerState {
               ? { movement: plan.movement }
               : plan.actionType === "look"
                 ? { yaw: plan.yaw, pitch: plan.pitch }
-                : plan.actionType === "select_hotbar"
-                  ? { slot: plan.slot }
+              : plan.actionType === "select_hotbar"
+                ? { slot: plan.slot }
+                : plan.actionType === "navigate_to"
+                  ? {
+                      x: plan.x,
+                      z: plan.z,
+                      tolerance: plan.tolerance,
+                      timeoutMs: plan.timeoutMs,
+                    }
                   : {},
       controlEpoch: this.controlEpoch,
       taskId: task.id,
@@ -829,6 +836,16 @@ function planBuiltInTask(goal: string):
   | {
       actionType: "drop_item";
     }
+  | {
+      actionType: "navigate_to";
+      x: number;
+      z: number;
+      tolerance: number;
+      timeoutMs: number;
+    }
+  | {
+      actionType: "cancel_navigation";
+    }
   | null {
   const chatMatch = /^send chat:\s*(.+)$/i.exec(goal);
   if (chatMatch?.[1]) {
@@ -884,6 +901,23 @@ function planBuiltInTask(goal: string):
 
   if (/^drop item$/i.test(goal)) {
     return { actionType: "drop_item" };
+  }
+
+  const navigateMatch =
+      /^navigate to:\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\s+([0-9]*\.?[0-9]+))?(?:\s+([0-9]+))?$/i
+          .exec(goal);
+  if (navigateMatch?.[1] && navigateMatch[2]) {
+    return {
+      actionType: "navigate_to",
+      x: Number(navigateMatch[1]),
+      z: Number(navigateMatch[2]),
+      tolerance: navigateMatch[3] ? Number(navigateMatch[3]) : 1.5,
+      timeoutMs: navigateMatch[4] ? Number(navigateMatch[4]) : 120_000,
+    };
+  }
+
+  if (/^cancel navigation$/i.test(goal)) {
+    return { actionType: "cancel_navigation" };
   }
 
   const movementMatch = /^set movement:\s*(.*)$/i.exec(goal);
