@@ -46,10 +46,11 @@
   - Live screenshot display.
   - Secrets screen with metadata-only secret list and server login.
   - Memory screen for viewing, creating, editing, and deleting records.
+  - One-command verification and SQLite backup/restore scripts.
 
 ## Verification
 
-- Node tests: 76 passed.
+- Node tests: 38 passed.
 - TypeScript typecheck: passed.
 - Controller production build: passed.
 - Panel production build: passed.

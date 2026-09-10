@@ -14,7 +14,13 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "verify": "bash scripts/verify.sh",
+    "backup": "node scripts/backup-state.mjs",
+    "restore": "node scripts/restore-state.mjs",
     "dev:controller": "npm run dev --workspace services/controller",
     "dev:panel": "npm run dev --workspace apps/panel"
+  },
+  "devDependencies": {
+    "rimraf": "^6.1.3"
   }
 }

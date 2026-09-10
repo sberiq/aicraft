@@ -36,6 +36,14 @@ mvn package
 
 Current implementation status is documented in [docs/status.md](docs/status.md).
 
+## Verification and backup
+
+```bash
+npm run verify
+npm run backup
+npm run restore path/to/backup.sqlite
+```
+
 The controller and panel use Node.js 22 or newer. The flagship Minecraft 1.20.2 profile targets Java 17.
 
 ## Repository map
