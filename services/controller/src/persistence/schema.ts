@@ -114,6 +114,7 @@ export const serializedControllerStateSchema = z.object({
         "cancel_navigation",
         "screen_click",
         "screen_scroll",
+        "click_slot",
       ]),
       parameters: z.object({
         text: z.string().optional(),
@@ -141,6 +142,8 @@ export const serializedControllerStateSchema = z.object({
         pointerY: z.number().min(0).max(4320).optional(),
         button: z.number().int().min(0).max(2).optional(),
         amount: z.number().min(-10).max(10).optional(),
+        inventorySlot: z.number().int().min(-999).max(999).optional(),
+        slotActionType: z.enum(["pickup", "quick_move", "swap", "throw"]).optional(),
       }),
       status: z.enum(["PENDING", "SUCCEEDED", "FAILED", "UNKNOWN"]),
       controlEpoch: z.number().int().positive(),

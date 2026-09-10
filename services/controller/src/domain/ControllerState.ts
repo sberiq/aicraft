@@ -625,7 +625,13 @@ export class ControllerState {
                           pointerY: plan.pointerY,
                           amount: plan.amount,
                         }
-                      : {},
+                      : plan.actionType === "click_slot"
+                        ? {
+                            inventorySlot: plan.inventorySlot,
+                            button: plan.button,
+                            slotActionType: plan.slotActionType,
+                          }
+                        : {},
       controlEpoch: this.controlEpoch,
       taskId: task.id,
     });
@@ -870,6 +876,12 @@ function planBuiltInTask(goal: string):
       pointerY: number;
       amount: number;
     }
+  | {
+      actionType: "click_slot";
+      inventorySlot: number;
+      button: number;
+      slotActionType: "pickup" | "quick_move" | "swap" | "throw";
+    }
   | null {
   const chatMatch = /^send chat:\s*(.+)$/i.exec(goal);
   if (chatMatch?.[1]) {
@@ -965,6 +977,22 @@ function planBuiltInTask(goal: string):
       pointerX: Number(screenScrollMatch[1]),
       pointerY: Number(screenScrollMatch[2]),
       amount: Number(screenScrollMatch[3]),
+    };
+  }
+
+  const clickSlotMatch =
+      /^click slot:\s*(-?\d+)\s+([0-2])\s+(pickup|quick_move|swap|throw)$/i
+          .exec(goal);
+  if (clickSlotMatch?.[1] && clickSlotMatch[2] && clickSlotMatch[3]) {
+    return {
+      actionType: "click_slot",
+      inventorySlot: Number(clickSlotMatch[1]),
+      button: Number(clickSlotMatch[2]),
+      slotActionType: clickSlotMatch[3].toLowerCase() as
+        | "pickup"
+        | "quick_move"
+        | "swap"
+        | "throw",
     };
   }
 

@@ -117,6 +117,15 @@ export const brainDecisionSchema = z.discriminatedUnion("actionType", [
     }),
     reasoning: z.string().max(2000).optional(),
   }),
+  z.object({
+    actionType: z.literal("click_slot"),
+    parameters: z.object({
+      inventorySlot: z.number().int().min(-999).max(999),
+      button: z.number().int().min(0).max(2).default(0),
+      slotActionType: z.enum(["pickup", "quick_move", "swap", "throw"]),
+    }),
+    reasoning: z.string().max(2000).optional(),
+  }),
 ]);
 
 export type BrainDecision = z.infer<typeof brainDecisionSchema>;

@@ -74,5 +74,6 @@ Additional action types:
 - `cancel_navigation`: releases navigation and movement keys.
 - `screen_click`: sends a click to the currently open Minecraft screen.
 - `screen_scroll`: sends vertical scrolling to the currently open Minecraft screen.
+- `click_slot`: sends a normal inventory slot click through `ClientPlayerInteractionManager`.
 
 When control owner changes away from `AGENT`, the controller sends `control.revoked`. The client cancels active navigation and releases all movement keys.

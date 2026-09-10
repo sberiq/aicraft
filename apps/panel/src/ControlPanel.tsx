@@ -74,6 +74,10 @@ export function ControlPanel({
   const [pointerY, setPointerY] = useState("0");
   const [mouseButton, setMouseButton] = useState("0");
   const [scrollAmount, setScrollAmount] = useState("1");
+  const [inventorySlot, setInventorySlot] = useState("0");
+  const [slotActionType, setSlotActionType] = useState<
+    "pickup" | "quick_move" | "swap" | "throw"
+  >("pickup");
   const [renderMode, setRenderMode] = useState<RenderMode>("ECONOMY");
   const [movement, setMovement] = useState({
     forward: false,
@@ -222,6 +226,22 @@ export function ControlPanel({
         parameters: { pointerX: x, pointerY: y, amount },
         controlEpoch,
       });
+      return;
+    }
+
+    if (actionKind === "click_slot") {
+      const slot = Number(inventorySlot);
+      const button = Number(mouseButton);
+      if (!Number.isInteger(slot) || !Number.isInteger(button)) return;
+      void onRequestAction({
+        actionType: "click_slot",
+        parameters: {
+          inventorySlot: slot,
+          button,
+          slotActionType,
+        },
+        controlEpoch,
+      });
     }
 
     void onRequestAction({
@@ -358,6 +378,7 @@ export function ControlPanel({
               <option value="cancel_navigation">cancel_navigation</option>
               <option value="screen_click">screen_click</option>
               <option value="screen_scroll">screen_scroll</option>
+              <option value="click_slot">click_slot</option>
             </select>
           </label>
           {actionKind === "send_chat" || actionKind === "send_command" ? (
@@ -492,6 +513,44 @@ export function ControlPanel({
                 value={scrollAmount}
               />
             </label>
+          ) : null}
+          {actionKind === "click_slot" ? (
+            <>
+              <label>
+                <span>Slot</span>
+                <input
+                  onChange={(event) => setInventorySlot(event.target.value)}
+                  type="number"
+                  value={inventorySlot}
+                />
+              </label>
+              <label>
+                <span>Button</span>
+                <input
+                  max={2}
+                  min={0}
+                  onChange={(event) => setMouseButton(event.target.value)}
+                  type="number"
+                  value={mouseButton}
+                />
+              </label>
+              <label>
+                <span>Action</span>
+                <select
+                  onChange={(event) =>
+                    setSlotActionType(
+                      event.target.value as "pickup" | "quick_move" | "swap" | "throw",
+                    )
+                  }
+                  value={slotActionType}
+                >
+                  <option value="pickup">pickup</option>
+                  <option value="quick_move">quick_move</option>
+                  <option value="swap">swap</option>
+                  <option value="throw">throw</option>
+                </select>
+              </label>
+            </>
           ) : null}
           <button onClick={submitAction} type="button">
             <Send size={17} />
@@ -651,6 +710,10 @@ function describeAction(action: ActionRecord): string {
 
   if (action.parameters.pointerX !== undefined || action.parameters.pointerY !== undefined) {
     return `pointer ${action.parameters.pointerX ?? 0}, ${action.parameters.pointerY ?? 0}`;
+  }
+
+  if (action.parameters.inventorySlot !== undefined && action.parameters.slotActionType) {
+    return `slot ${action.parameters.inventorySlot}, ${action.parameters.slotActionType}`;
   }
 
   if (action.parameters.movement) {

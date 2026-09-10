@@ -11,6 +11,7 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.util.ScreenshotRecorder;
+import net.minecraft.screen.slot.SlotActionType;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -135,6 +136,28 @@ public final class AicraftActionExecutor {
                         0.0,
                         parameters.get("amount").getAsDouble()
                 );
+            } else if ("click_slot".equals(actionType)) {
+                if (networkHandler == null) {
+                    response.addProperty("status", "FAILED");
+                    response.addProperty("result", "Network handler is unavailable");
+                    return response;
+                }
+
+                String slotActionName = parameters.get("slotActionType").getAsString();
+                SlotActionType slotActionType = switch (slotActionName) {
+                    case "quick_move" -> SlotActionType.QUICK_MOVE;
+                    case "swap" -> SlotActionType.SWAP;
+                    case "throw" -> SlotActionType.THROW;
+                    default -> SlotActionType.PICKUP;
+                };
+
+                client.interactionManager.clickSlot(
+                        player.currentScreenHandler.syncId,
+                        parameters.get("inventorySlot").getAsInt(),
+                        parameters.has("button") ? parameters.get("button").getAsInt() : 0,
+                        slotActionType,
+                        player
+                );
             } else {
                 response.addProperty("status", "FAILED");
                 response.addProperty("result", "Unsupported action type");
@@ -220,6 +243,7 @@ public final class AicraftActionExecutor {
             case "drop_item" -> "Drop item key sent through normal key binding";
             case "screen_click" -> "Screen click processed by Minecraft GUI";
             case "screen_scroll" -> "Screen scroll processed by Minecraft GUI";
+            case "click_slot" -> "Inventory slot click sent through Minecraft client";
             default -> "Action sent through the Minecraft client";
         };
     }

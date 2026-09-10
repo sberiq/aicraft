@@ -29,7 +29,8 @@ export type ActionType =
   | "navigate_to"
   | "cancel_navigation"
   | "screen_click"
-  | "screen_scroll";
+  | "screen_scroll"
+  | "click_slot";
 export type ActionStatus = "PENDING" | "SUCCEEDED" | "FAILED" | "UNKNOWN";
 
 export interface Connector {
@@ -151,6 +152,8 @@ export interface ActionRecord {
     pointerY?: number;
     button?: number;
     amount?: number;
+    inventorySlot?: number;
+    slotActionType?: "pickup" | "quick_move" | "swap" | "throw";
   };
   status: ActionStatus;
   controlEpoch: number;

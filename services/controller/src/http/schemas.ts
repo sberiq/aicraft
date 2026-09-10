@@ -187,6 +187,15 @@ export const requestActionSchema = z.discriminatedUnion("actionType", [
     }),
     controlEpoch: z.number().int().positive(),
   }),
+  z.object({
+    actionType: z.literal("click_slot"),
+    parameters: z.object({
+      inventorySlot: z.number().int().min(-999).max(999),
+      button: z.number().int().min(0).max(2).default(0),
+      slotActionType: z.enum(["pickup", "quick_move", "swap", "throw"]),
+    }),
+    controlEpoch: z.number().int().positive(),
+  }),
 ]);
 
 export const createSecretSchema = z.object({

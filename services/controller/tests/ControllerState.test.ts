@@ -439,6 +439,31 @@ describe("ControllerState", () => {
     expect(actions[1]?.parameters.amount).toBe(-2);
   });
 
+  it("plans inventory slot click tasks", () => {
+    const state = new ControllerState();
+    const grant = state.createPairingGrant("client_mod");
+    state.pairConnector({
+      pairingCode: grant.code,
+      kind: "client_mod",
+      name: "Inventory transfer client",
+      protocolVersion: 1,
+    });
+    state.setControlOwner("AGENT");
+    const task = state.submitTask({
+      title: "Move item",
+      goal: "click slot: 10 0 quick_move",
+      priority: 1,
+      author: "owner",
+    });
+    state.runTask(task.id);
+    const action = state.listActions()[0];
+
+    expect(action?.actionType).toBe("click_slot");
+    expect(action?.parameters.inventorySlot).toBe(10);
+    expect(action?.parameters.button).toBe(0);
+    expect(action?.parameters.slotActionType).toBe("quick_move");
+  });
+
   it("creates, updates, and deletes memory records", () => {
     const state = new ControllerState();
     const memory = state.createMemory({
